@@ -1,0 +1,32 @@
+{
+    "id": "915245DC",
+    "path": null,
+    "project_path": null,
+    "type": "r_dataframe",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1588110874839.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "cacheKey": "AB3056B8",
+        "caption": "ibutton_sites",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=ibutton_sites&cache_key=AB3056B8",
+        "displayedObservations": 17210,
+        "environment": "",
+        "object": "ibutton_sites",
+        "preview": 0,
+        "totalObservations": 17210,
+        "variables": 4,
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 7953757585075601407,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1588110874839,
+    "read_only": false,
+    "read_only_alternatives": []
+}

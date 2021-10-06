@@ -1,0 +1,32 @@
+{
+    "id": "503C2036",
+    "path": null,
+    "project_path": null,
+    "type": "r_dataframe",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1588104625112.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "cacheKey": "C63AAB3C",
+        "caption": "ibutton_clean",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=ibutton_clean&cache_key=C63AAB3C",
+        "displayedObservations": 15489,
+        "environment": "",
+        "object": "ibutton_clean",
+        "preview": 0,
+        "totalObservations": 15489,
+        "variables": 4,
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 7308604914264011873,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1588104625112,
+    "read_only": false,
+    "read_only_alternatives": []
+}

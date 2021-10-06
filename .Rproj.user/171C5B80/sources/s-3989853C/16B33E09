@@ -1,0 +1,32 @@
+{
+    "id": "16B33E09",
+    "path": null,
+    "project_path": null,
+    "type": "r_dataframe",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1588111534313.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "cacheKey": "95797C40",
+        "caption": "temperature",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=temperature&cache_key=95797C40",
+        "displayedObservations": 15489,
+        "environment": "",
+        "object": "temperature",
+        "preview": 0,
+        "totalObservations": 15489,
+        "variables": 3,
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 4301834496,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1588111534313,
+    "read_only": false,
+    "read_only_alternatives": []
+}
