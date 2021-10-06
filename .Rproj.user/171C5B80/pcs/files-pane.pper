@@ -1,9 +1,9 @@
 {
-    "path" : "~/Documents/UBC/R_projects/semibalanus",
-    "sortOrder" : [
+    "path": "~/Documents/UBC/R_projects/thesis_chapters/semibalanus",
+    "sortOrder": [
         {
-            "ascending" : true,
-            "columnIndex" : 2
+            "columnIndex": 2,
+            "ascending": true
         }
     ]
 }
