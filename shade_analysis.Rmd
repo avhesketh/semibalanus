@@ -1,0 +1,23 @@
+---
+title: "Semibalanus shading experiment"
+author: "Amelia Hesketh"
+date: "06/10/2021"
+output: html_document
+---
+
+# Objectives
+
+This experiment is designed to document how communities differ (in terms of Shannon diversity, species richness, and total abundance of organisms) between Semibalanus beds that are shaded vs. unshaded during the summer season. Shades reduce temperature (and desiccation stress). I also scraped a subset of plots to see how early succession is affected by the presence or absence of shades.
+
+I want to examine:
+1) How communities differ in mulitdimensional space between treatments - what is their dispersion, and how far apart are they?
+2) How Shannon diversity differs
+3) How richness differs
+4) How total abundance differs
+
+# Temperature data
+
+```{r}
+
+```
+
