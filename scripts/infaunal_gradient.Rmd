@@ -1,0 +1,48 @@
+---
+title: "Semibalanus infaunal gradient"
+author: "Amelia Hesketh"
+date: "06/10/2021"
+output: html_document
+---
+
+```{r}
+ibrary(vegan)
+
+collection.info <- read_csv("./raw_data/infauna/SBC_INFAUNA_collections.csv")
+
+sample.files <- list.files("./raw_data/infauna/community_data/")
+
+for (file in 1: length(sample.files)){
+  file.name = paste("./raw_data/infauna/community_data/", sample.files[file], sep = "")
+  infauna <- read_csv(file.name) %>% mutate(file_name = sample.files[file])
+  if (file == 1){
+    infauna.all <- infauna
+  }
+  if (file > 1){
+    infauna.all <- infauna %>% full_join(infauna.all)
+  }
+}
+
+infauna.clean <- infauna.all %>% replace(is.na(.), 0) %>% relocate(file_name, .before = ONBI) %>% separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info) %>% relocate(c(site_code, collection_date), .before = ONBI)
+
+#get rid of everything and convert to matrix
+infauna.matrix <- infauna.clean %>% 
+  select(-collection_number, -site_code, -collection_date) 
+  
+# convert to matrix
+infauna.matrix <- as.matrix(infauna.matrix)
+
+# ready to analyze
+comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 400)
+
+tiff("community.tiff", units = "in", width = 6, height = 6, res = 450)
+
+oct_ord <- ordiplot(comm_oct, type = "none", xlim = c(-2,2), ylim = c(-2,2))
+points(oct_ord, "sites", cex = 0.7, col = "black")
+orditorp(oct_ord,display="species",col="grey30", cex = 0.8, air=1)
+ordiellipse(oct_ord, groups = comm_oct_factors$treatment, 
+            col = c("blue", "red"), label = TRUE)
+dev.off()
+
+```
+

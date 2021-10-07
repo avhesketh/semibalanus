@@ -1,0 +1,218 @@
+---
+title: "Semibalanus shading experiment"
+author: "Amelia Hesketh"
+date: "06/10/2021"
+output: html_document
+---
+
+# Objectives
+
+This experiment is designed to document how communities differ (in terms of Shannon diversity, species richness, and total abundance of organisms) between Semibalanus beds that are shaded vs. unshaded during the summer season. Shades reduce temperature (and desiccation stress). I also scraped a subset of plots to see how early succession is affected by the presence or absence of shades.
+
+I want to examine: 1) How communities differ in mulitdimensional space between treatments - what is their dispersion, and how far apart are they? 2) How Shannon diversity differs 3) How richness differs 4) How total abundance differs
+
+# Temperature data
+
+```{r, message=F, results="hide", warning=FALSE}
+
+library(tidyverse)
+library(lubridate)
+library(car)
+library(vegan)
+
+temp.files <- list.files("../raw_data/ibutton_temp/")
+
+temp.df.all.aug <- data.frame(matrix(ncol = 4))
+colnames(temp.df.all.aug) <- c("Date/Time", "Unit", "Value", "file_name")
+
+for (file in 1: length(temp.files)){
+  file.name = paste("../raw_data/ibutton_temp/", temp.files[file], sep = "")
+  temp.df <- read_csv(file.name, skip = 14) %>% mutate(file_name = temp.files[file])
+  if (str_detect(file.name, "07")==TRUE){
+    if (file == 1){
+    temp.df.all.july <- temp.df
+  }
+  if (file > 1){
+    temp.df.all.july <- rbind(temp.df.all.july, temp.df)
+  }
+  }
+  else {
+    temp.df.all.aug <- rbind(temp.df.all.aug, temp.df)
+  }
+}
+
+temp.df.clean.july <- temp.df.all.july %>% mutate(Value = str_remove_all(Value, "C,")) %>% separate(file_name, sep = "_", into = c("block","treatment","extra")) %>% select(-extra) %>% rename(date = 1, time = 2, temperature_C = 3) %>%
+mutate(time = toupper(str_remove_all(time, fixed(".")))) %>% mutate(time = parse_time(time, "%I:%M:%S %p")) %>% unite(date_time, c(date, time), sep = " ") %>% mutate(date_time = as_datetime(date_time), temperature_C = as.numeric(temperature_C))
+
+temp.df.clean.aug <- temp.df.all.aug %>% na.omit() %>% select(-Unit) %>% separate(file_name, sep = "_", into = c("block","treatment","extra")) %>% select(-extra) %>% rename(date_time = 1, temperature_C = 2) %>% mutate(date_time = parse_date_time(date_time, "%d/%m/%y %I:%M:%S %p"))
+
+temp.clean <- temp.df.clean.aug %>%  full_join(temp.df.clean.july) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR")) %>% filter(date_time < "2021-08-21 6:00:00" & date_time > "2021-04-17 15:00:00")
+
+```
+
+```{r}
+
+temp.sep <- temp.clean %>% separate(date_time, into = c("date","time"), sep = " ")
+temp.summary <- temp.sep %>% group_by(date, treatment) %>% summarize(mean_temp = mean(temperature_C)) %>% mutate(date = date(date))
+
+ggplot(data = temp.summary, aes(x = date, y = mean_temp, col = treatment)) + geom_line() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Temperature (ºC)", color = "Treatment") + theme_bw()
+
+```
+
+The temperature is highest in the unshaded treatments (as expected) by (at times) a substantial margin. What does this break down to in a boxplot sense?
+
+```{r}
+
+temp.summary2 <- temp.sep %>% group_by(treatment, date) %>% summarize(mdmax_temp = max(temperature_C))
+
+ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = treatment)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Maximum Daily Temperature (ºC)", color = "Treatment") + theme_bw()
+
+```
+
+```{r}
+
+temp.model <- lm(mdmax_temp ~ treatment, data = temp.summary2 %>% filter(mdmax_temp < 50))
+summary(temp.model)
+anova(temp.model)
+
+```
+
+# Infaunal community, because that's more fun!
+
+```{r, message = F, results = "hide"}
+library(vegan)
+
+collection.info <- read_csv("../raw_data/shade/SBC_SHADE_plot_info.csv")
+survey.info <- read_csv("../raw_data/shade/SBC_SHADE_survey_info.csv")
+
+infauna.shade <- read_csv("../raw_data/shade/SBC_SHADE_infauna.csv") %>% rename(plot_number = plot_id) %>% left_join(collection.info) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR")) %>% select(-shore_level, -treatment_final_numeric)
+
+#get rid of everything and convert to matrix
+infauna.matrix <- infauna.shade %>% 
+  select(-plot_number, -block, -treatment)
+  
+# convert to matrix
+infauna.matrix <- as.matrix(infauna.matrix)
+
+# ready to analyze
+comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 400)
+
+# can't get ordplot to display in .Rmd file
+
+factors.infauna <-infauna.shade %>% select(treatment, block)
+
+perm.y1 <- adonis(infauna.matrix ~ treatment, data = factors.infauna,
+                  perm = 99)
+
+dist.y1 <- vegdist(infauna.matrix, method = "bray")
+disp.y1 <- betadisper(dist.y1, type = "centroid", group = factors.infauna$treatment)
+
+```
+
+```{r}
+perm.y1
+anova(disp.y1)
+boxplot(disp.y1)
+```
+
+```{r, echo = F}
+knitr::include_graphics("../outputs/community_shade.png")
+
+```
+# Mortality in shaded vs. unshaded
+
+```{r, message = F, results = "hide"}
+barnacle.mort <- read_csv("../raw_data/shade/SBC_SHADE_semibalanusmort.csv") %>% mutate(prop_mort = (number_dead)/(number_live+number_dead)) %>% filter(prop_mort != "NaN")
+
+plot.info <- read_csv("../raw_data/shade/SBC_SHADE_plot_info.csv")
+
+mort.complete <- barnacle.mort %>% left_join(plot.info) %>% filter((plot_number %in% c(15,35,36,40)) == F) %>% select(prop_mort, treatment_original_numeric, plot_number) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
+
+mort.beds <- mort.complete %>% filter(treatment %in% c("SI","UI"))
+
+shade.mort.model <- lm(prop_mort ~ treatment, data = mort.beds)
+
+```
+```{r}
+summary(shade.mort.model)
+
+ggplot(mort.beds, aes(x = treatment, y = prop_mort)) + geom_boxplot()
+
+```
+
+Clearly, having a shade positively affected barnacle survival. What about species richness/diversity based on visual surveys??
+
+```{r,message = F, results = "hide"}
+
+visuals <- read_csv("../raw_data/shade/SBC_SHADE_visual_3_202108.csv")
+
+# separate the cover and count data
+
+taxa <- read_csv("../raw_data/shade/SBC_SHADE_taxonomic_20211004.csv") %>% select(taxon_code, kingdom)
+
+algae <- taxa %>% filter(kingdom != "Animalia") %>% select(-kingdom)
+animal <- taxa %>% filter(kingdom == "Animalia") %>% select(-kingdom)
+
+# algal diversity & abund
+
+visuals.long <- visuals %>% pivot_longer(cols = c(2:length(visuals)), names_to = "taxon_code", values_to = "abund")
+
+visuals.algae <- visuals.long %>% right_join(algae) %>% pivot_wider(names_from = "taxon_code", values_from = "abund") %>% select(-ULSP) %>% na.omit()
+
+richness <- specnumber(visuals.algae)
+H <- diversity(visuals.algae)
+total_cover <- rowSums(visuals.algae %>% select(-plot_number))
+
+diversity.algae <- cbind(visuals.algae$plot_number, H, richness, total_cover)
+colnames(diversity.algae) <- c("plot_number","H","richness", "total_cover")
+diversity.algae <- as.data.frame(diversity.algae)
+
+diversity.algae.trts <- diversity.algae %>% full_join(plot.info) %>% select(-plot_number, -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
+
+# animal diversity & abund
+
+visuals.animals <- visuals.long %>% right_join(animal) %>% pivot_wider(names_from = "taxon_code", values_from = "abund") %>% select(-c(GNOR:NEVE)) %>% na.omit()
+
+H <- diversity(visuals.animals)
+richness <- specnumber(visuals.animals)
+abund <- rowSums(visuals.animals %>% select(-plot_number))
+
+diversity.animals <- cbind(visuals.animals$plot_number, H, richness, abund)
+colnames(diversity.animals) <- c("plot_number","H","richness","abund")
+diversity.animals <- as.data.frame(diversity.animals)
+
+diversity.animals.trts <- diversity.animals %>% full_join(plot.info) %>% select(-plot_number, -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
+
+```
+```{r}
+ggplot(diversity.animals.trts, aes(x=treatment, y = richness)) + geom_boxplot()
+```
+```{r}
+ggplot(diversity.animals.trts, aes(x=treatment, y = H)) + geom_boxplot()
+```
+```{r}
+ggplot(diversity.animals.trts, aes(x=treatment, y = abund)) + geom_boxplot()
+```
+
+```{r}
+
+animal.richness <- lm(richness ~ treatment, data = diversity.animals.trts)
+summary(animal.richness)
+Anova(animal.richness)
+
+animal.diversity <- lm(H ~ treatment, data = diversity.animals.trts)
+summary(animal.diversity)
+Anova(animal.diversity)
+
+```
+
+```{r}
+ggplot(diversity.algae.trts, aes(x=treatment, y = H)) + geom_boxplot()
+```
+```{r}
+ggplot(diversity.algae.trts, aes(x=treatment, y = richness)) + geom_boxplot()
+```
+```{r}
+ggplot(diversity.algae.trts, aes(x=treatment, y = total_cover)) + geom_boxplot()
+```
+
