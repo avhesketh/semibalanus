@@ -23,9 +23,9 @@ library(DHARMa)
 library(lme4)
 library(car)
 
-angle.data <- read_csv("./raw_data/mortality/SBC_MORT_angles.csv")
+angle.data <- read_csv("../raw_data/mortality/SBC_MORT_angles.csv")
 
-site.info <- read_csv("./raw_data/SBC_siteinformation.csv") %>% select(site_code,angles,solar_elevation, solar_azimuth) %>% na.omit() %>% select(-angles)
+site.info <- read_csv("../raw_data/SBC_siteinformation.csv") %>% select(site_code,angles,solar_elevation, solar_azimuth) %>% na.omit() %>% select(-angles)
 
 
 #join together the dataframes
@@ -45,7 +45,7 @@ solar.angles <- angle.correct %>% mutate(gamma = abs(orient_rad - solar_az_rad))
 
 ```{r}
 
-ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + geom_point() + labs(y = "Proportion mortality", x = "Solar angle (degrees)", col = "site") + theme_classic() + geom_smooth(method = "lm", se=F)
+ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + geom_point() + labs(y = "Proportion mortality", x = "Solar angle (degrees)", col = "site") + theme_classic() + geom_smooth(method = "lm", se=F) + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
 
 ```
 

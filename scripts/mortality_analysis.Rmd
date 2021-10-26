@@ -32,12 +32,12 @@ library(tidyverse)
 
 # first, assemble all relevant air temperature data
 
-temp.files <- list.files("./raw_data/air_temp/")
+temp.files <- list.files("../raw_data/air_temp/")
 
 # join together all the files
 
 for (file in 1: length(temp.files)){
-  file.name = paste("./raw_data/air_temp/", temp.files[file], sep = "")
+  file.name = paste("../raw_data/air_temp/", temp.files[file], sep = "")
   file.name.len = nchar(file.name)
   site.name = substr(file.name, (file.name.len-5), (file.name.len-4))
   temp.df <- read_csv(file.name, col_select = c(5:8, 10, 14)) %>% 
@@ -56,7 +56,7 @@ temp.df.rename <- temp.df.all %>% rename("date" = 1, "year" = 2,"month" = 3, "da
 
 # need to next associate each site with a sampling date, and filter out any temp data that was recorded after
 
-survey.info <- read_csv("./raw_data/SBC_siteinformation.csv") %>% 
+survey.info <- read_csv("../raw_data/SBC_siteinformation.csv") %>% 
   select(site_code, latitude_degrees, longitude_degrees, mortality, mortality_survey, aspect) %>% 
   na.omit() %>% mutate(aspect = case_when(aspect == "N" ~ 0, aspect == "S" ~ 180, aspect == "W" ~ 270, aspect == "E" ~ 90, aspect == "NW" ~ 315, aspect == "SW" ~ 225, aspect == "NE" ~ 45, aspect == "SE" ~ 135))
 
@@ -91,7 +91,7 @@ explanatory.variables <- survey.info %>% left_join(temp.hw.summary) %>%
 ```{r, message = F, results = "hide"}
 # now to get response data read in
 
-mortality <- read_csv("./raw_data/mortality/SBC_MORT_surveys.csv") %>% 
+mortality <- read_csv("../raw_data/mortality/SBC_MORT_surveys.csv") %>% 
   select(-cover_live, -cover_dead, -algal_cover_per25sq)
 
 mort.model.df <- mortality %>% full_join(explanatory.variables) %>% 
@@ -104,6 +104,7 @@ mort.model.df <- mortality %>% full_join(explanatory.variables) %>%
 hist(mort.model.df$prop_dead, breaks = 50, xlab = "Proportion dead", main = "Histogram of mortality data")
 
 ```
+
 Based on the distribution of these data, a beta model may not be the way to go. The data have an extreme case of zero-inflation, but I don't believe that different processes are causing mortality vs. no mortality, so a hurdle ZOIB model seems inappropriate. Starting off with a Tweedie distribution, while imperfect, may be the best option.
 
 # Model building
@@ -143,7 +144,8 @@ mort.mod.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + longitude_degrees + a
 plot(simulateResiduals(mort.mod.1))
 
 ```
-The residuals don't look too bad. Moving onto interpreting the model.
+
+The residuals don't look too great, so it might be worth trying a beta approach with transformation.
  
 ```{r}
 
@@ -171,8 +173,11 @@ First, a plot of mortality across sites, coded by temperature (note that sites a
 
 ```{r, echo = F}
 
-ggplot(data = mort.summary, aes(x = fct_reorder(site_code, longitude_degrees, min), y = average_mort, col = average_maxtemp)) + geom_point(size = 3) + scale_colour_gradientn(colours = wes_palette("Zissou1", type = "continuous", 10)) +theme_classic() +labs(y = "Proportion mortality", x = "Site", color = "Mean max daily temp \n during heat wave")
+ggplot(data = mort.summary, aes(x = fct_reorder(site_code, longitude_degrees, min), y = average_mort, col = average_maxtemp)) + geom_point(size = 3) + scale_colour_gradientn(colours = wes_palette("Zissou1", type = "continuous", 10)) + geom_point(size = 3, pch = 1, color = "black") + theme_bw() +labs(y = "Proportion mortality", x = "Site", color = "Mean max daily temp \n during heat wave") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
 
 ```
 
 Understandable, then, why there is no effect of temperature in the model. Or longitude. The patterns are all over the place. I suspect this is due to differences in aspect, which may be more important than prevailing air temperature.
+
+- some metric of distance from outer coast is probably better than longitude. Maybe use qGIS?
+- some weather data may not be accurate (in particular, for Calvert Island)
