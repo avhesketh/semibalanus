@@ -39,13 +39,7 @@ angle.correct <- angle.calculate %>% mutate(orient_rad = (((orientation_raw_degr
 # now for the calculations
 
 solar.angles <- angle.correct %>% mutate(gamma = abs(orient_rad - solar_az_rad)) %>% mutate(theta = acos(sin(beta)*cos(sigma) + cos(gamma)*cos(beta)*sin(sigma))) %>% mutate(angle = (theta/(2*pi)*360)) %>% 
-  select(prop_mort, angle, site_code)
-
-```
-
-```{r}
-
-ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + geom_point() + labs(y = "Proportion mortality", x = "Solar angle (degrees)", col = "site") + theme_classic() + geom_smooth(method = "lm", se=F) + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+  select(prop_mort, angle, site_code) %>% mutate(site_code = str_replace_all(site_code, "WA","WB"))
 
 ```
 
@@ -56,15 +50,15 @@ We may also want to integrate temperature information into the model to see if t
 ```{r}
 angle.transform <- solar.angles %>% mutate(mort_beta = (prop_mort*(length(prop_mort)-1) + 0.5)/length(prop_mort), mort_percent = 100*prop_mort)
 
-angle.model.0 <- lmer(prop_mort ~ angle + (1|site_code), data = angle.transform)
+angle.model.0 <- lmer(mort_percent ~ angle + (1+angle|site_code), data = angle.transform)
 
 plot(angle.model.0)
 
-angle.model.1 <- glmmTMB(mort_beta ~ angle + (1|site_code), data = angle.transform, family = beta_family())
+angle.model.1 <- glmmTMB(mort_beta ~ angle + (1+angle|site_code), data = angle.transform, family = beta_family())
 
 plot(simulateResiduals(angle.model.1)) 
 
-angle.model.2 <- glmmTMB(mort_percent ~ angle + (1|site_code), data = angle.transform,family = tweedie())
+angle.model.2 <- glmmTMB(mort_percent ~ angle + (1|site_code), data = angle.transform, family = tweedie())
 
 plot(simulateResiduals(angle.model.2))
 
@@ -74,6 +68,15 @@ plot(simulateResiduals(angle.model.2))
 ```{r}
 summary(angle.model.2)
 Anova(angle.model.2)
+
+library(ggeffects)
+library(RColorBrewer)
+pal <- colorRampPalette(brewer.pal(6, "Dark2"))(6)
+
+set.seed(26)
+model.pred <- ggpredict(angle.model.2, terms = c("angle", "site_code"), type = "random")
+
+ggplot(data = solar.angles %>% rename(group = site_code), aes(x = angle, y = prop_mort*100, col = group)) + geom_point(size = 2) + labs(y = "Mortality (%)", x = "Substratum orientation (relative to direct sun = 0º)", col = "Site") + theme_classic() + scale_color_manual(values = pal) + scale_fill_manual(values = pal) + geom_line(data = model.pred, aes(x = x, y = predicted)) + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + ylim(c(0,100))
 
 ```
 

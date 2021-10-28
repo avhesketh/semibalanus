@@ -48,6 +48,8 @@ temp.df.clean.aug <- temp.df.all.aug %>% na.omit() %>% select(-Unit) %>% separat
 
 temp.clean <- temp.df.clean.aug %>%  full_join(temp.df.clean.july) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR")) %>% filter(date_time < "2021-08-21 6:00:00" & date_time > "2021-04-17 15:00:00")
 
+#write_csv(temp.clean, "../clean_data/SBHW_temp_clean.csv")
+
 ```
 
 ```{r}

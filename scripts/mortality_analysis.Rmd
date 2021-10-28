@@ -19,7 +19,14 @@ The response, barnacle mortality, is a percentage value obtained by counting the
 
 Temperature data was obtained from Climate Canada. While numerous temperature metrics may be suitable, we will attempt to use the a) mean daily maximum temperature during the heat dome period in British Columbia (June 25-29), and b) mean daily maximum temperature during the start of summer to the time of each mortality survey.
 
-In addition, we will consider the longitude of each site as a covariate (approximating distance from the more temperate outer coast). Given that topography and aspect varied within each site, it seems unlikely that using the dominant shore aspect will serve any major purpose.
+In addition, we will consider the dominant shore aspect and timing of the low tide (to the nearest hour).
+
+We hypothesize that:
+
+1. Mortality will increase with higher air temperature (both for the heat wave and overall during summer).
+2) Mortality will increase with proximity of shore aspect to the south
+3) Mortality will increase as the tide falls later in the day (to coincide with high air temps). Air temp * time of tide will be significant since high max air temp later in the day will have no bearing on survival if barnacles immersed.
+4) Mortality will be reduced by algal cover since this buffers extreme temp.
 
 ## Modeling approach
 
@@ -29,6 +36,7 @@ We will attempt to model mortality using a generalized linear modeling approach 
 
 ```{r, results='hide', message = F}
 library(tidyverse)
+library(lubridate)
 
 # first, assemble all relevant air temperature data
 
@@ -58,7 +66,7 @@ temp.df.rename <- temp.df.all %>% rename("date" = 1, "year" = 2,"month" = 3, "da
 
 survey.info <- read_csv("../raw_data/SBC_siteinformation.csv") %>% 
   select(site_code, latitude_degrees, longitude_degrees, mortality, mortality_survey, aspect) %>% 
-  na.omit() %>% mutate(aspect = case_when(aspect == "N" ~ 0, aspect == "S" ~ 180, aspect == "W" ~ 270, aspect == "E" ~ 90, aspect == "NW" ~ 315, aspect == "SW" ~ 225, aspect == "NE" ~ 45, aspect == "SE" ~ 135))
+  na.omit() %>% mutate(degrees_from_north = case_when(aspect == "N" ~ 0, aspect == "S" ~ 180, aspect == "W" ~ 90, aspect == "E" ~ 90, aspect == "NW" ~ 45, aspect == "SW" ~ 135, aspect == "NE" ~ 45, aspect == "SE" ~ 135))
 
 survey.dates <- survey.info %>% select(site_code, mortality_survey)
 
@@ -82,9 +90,30 @@ temp.hw.summary <- temp.hw.only %>%
 # join to site information data frame
 
 explanatory.variables <- survey.info %>% left_join(temp.hw.summary) %>% 
-  full_join(temp.summary) %>% select(-mortality, -mortality_survey, -latitude_degrees)
+   select(-mortality, -mortality_survey, -latitude_degrees)
 
 ```
+
+# Assembling tide data
+
+```{r}
+
+tides_cp <- read_delim("../raw_data/tides/tides_CP.csv", col_names = c("date","junk","time","tz","tide_height_m")) %>% mutate(hour = hour(time), site_code = "CP") %>% select(-junk, -tz, -time)
+
+tides_tp <- read_delim("../raw_data/tides/tides_TP.csv", col_names = c("date","junk","time","tz","tide_height_m")) %>% mutate(hour = hour(time), site_code = "TP") %>% select(-junk, -tz, -time) 
+
+tides_rest <- read_csv("../raw_data/tides/tides_other_sites.csv") %>% pivot_longer(names_to = "hour", values_to = "tide_height_m", cols = 3:length(.)) %>% mutate(hour = as.integer(hour))
+
+tides_full <- rbind(rbind(tides_cp, tides_tp),tides_rest)
+
+#write_csv(tides_full, "../clean_data/SBHW_tides_clean.csv")
+
+tides_summary <- tides_full %>% group_by(site_code, date) %>% mutate(low_water = min(tide_height_m)) %>% ungroup() %>% filter(tide_height_m == low_water) %>% group_by(site_code) %>% summarize(mean_low_tide_time = mean(hour))
+
+with.tides <- explanatory.variables %>% left_join(tides_summary)
+
+```
+
 
 # Generating dataframe for modeling
 
@@ -92,9 +121,9 @@ explanatory.variables <- survey.info %>% left_join(temp.hw.summary) %>%
 # now to get response data read in
 
 mortality <- read_csv("../raw_data/mortality/SBC_MORT_surveys.csv") %>% 
-  select(-cover_live, -cover_dead, -algal_cover_per25sq)
+  select(-cover_live, -cover_dead, -algal_cover_per25sq) %>% filter((site_code == "CP" & transect == 3) == F)
 
-mort.model.df <- mortality %>% full_join(explanatory.variables) %>% 
+mort.model.df <- mortality %>% full_join(with.tides) %>% 
   mutate(prop_dead = number_dead/(number_dead+number_live))
 
 ```
@@ -132,34 +161,42 @@ library(car)
 
 ```{r}
 # check correlation of temperature variables
-ggpairs(mort.model.df %>% select(mean_daily_max_temp,mean_daily_max_temp_hw,mean_daily_temp,mean_daily_temp_hw))
+#ggpairs(mort.model.df %>% select(mean_daily_max_temp,mean_daily_max_temp_hw,mean_daily_temp,mean_daily_temp_hw))
 
 ```
 ```{r}
 
-mort.mod.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + longitude_degrees + algal_prop_cover + number_ANEL + (1 | site_code), data = mort.model.df, family = tweedie())
-
+mort.mod.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code), data = mort.model.df, family = tweedie())
+print(mort.mod.1)
 # I can't add in a nested random variable for transect within site without causing convergence issues.
 
 plot(simulateResiduals(mort.mod.1))
 
 ```
 
-The residuals don't look too great, so it might be worth trying a beta approach with transformation.
+The residuals look reasonable!
  
 ```{r}
 
 summary(mort.mod.1)
+plot(residuals(mort.mod.1))
+
+x <- predict(mort.mod.1, type = "response")
+y <- mort.mod.1$frame$prop_dead
+cor(y,x)^2
+
 
 ```
  
 ```{r}
 Anova(mort.mod.1)
+
+
 ```
 
 ```{r, include=F, results="hide"}
 
-mort.summary <- mort.model.df %>% mutate(site_code = factor(site_code)) %>% group_by(site_code, longitude_degrees) %>% summarize(average_mort = mean(prop_dead, na.rm = T), average_maxtemp = mean(mean_daily_max_temp_hw)) %>% mutate(site_code = factor(site_code))
+mort.summary <- mort.model.df %>% mutate(site_code = factor(site_code)) %>% group_by(site_code, longitude_degrees, degrees_from_north, mean_low_tide_time) %>% summarize(average_mort = mean(prop_dead, na.rm = T), average_maxtemp = mean(mean_daily_max_temp_hw)) %>% mutate(site_code = factor(site_code))
 
 library(wesanderson)
 
@@ -172,10 +209,17 @@ The follows are some plots that might be of interest.
 First, a plot of mortality across sites, coded by temperature (note that sites are arranged from W to E in their longitude across the x-axis).
 
 ```{r, echo = F}
+require(tidyverse)
+require(wesanderson)
 
-ggplot(data = mort.summary, aes(x = fct_reorder(site_code, longitude_degrees, min), y = average_mort, col = average_maxtemp)) + geom_point(size = 3) + scale_colour_gradientn(colours = wes_palette("Zissou1", type = "continuous", 10)) + geom_point(size = 3, pch = 1, color = "black") + theme_bw() +labs(y = "Proportion mortality", x = "Site", color = "Mean max daily temp \n during heat wave") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+ggplot(data = mort.summary, aes(x = fct_reorder(site_code, longitude_degrees, min), y = average_mort*100, col = average_maxtemp)) + geom_point(size = 5) + scale_colour_gradientn(colours = wes_palette("Zissou1", type = "continuous", 10)) + geom_point(size = 5, pch = 1, color = "black") + theme_bw() +labs(y = "Mortality (%)", x = "Site", color = "Max daily temp. (ºC) \n during heat wave") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
 
 ```
+
+```{r}
+ggplot(data = mort.summary, aes(x = degrees_from_north, y = average_mort*100)) + geom_point(size = 5) + geom_point(size = 5, pch = 1, color = "black") + theme_bw() +labs(y = "Mortality (%)", x = "Dominant shore aspect (degrees away from north = 0º)") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+```
+
 
 Understandable, then, why there is no effect of temperature in the model. Or longitude. The patterns are all over the place. I suspect this is due to differences in aspect, which may be more important than prevailing air temperature.
 
