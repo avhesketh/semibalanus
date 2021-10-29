@@ -1,0 +1,60 @@
+---
+title: "Shade experiment analyses: surveys"
+author: "Amelia Hesketh"
+date: "29/10/2021"
+output: html_document
+---
+
+## Assembling data
+
+```{r}
+
+library(tidyverse)
+
+taxa <- read_csv("../raw_data/SBC_taxonomic_20211026.csv") %>% select(taxon_code)
+plots <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
+
+viz.1 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_1_20210414.csv") %>% pivot_longer(cols = 4:length(.), names_to = "taxon_code", values_to = "abund") %>% left_join(plots) %>% select(date, plot_number, taxon_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+
+viz.2 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_2_20210708.csv") %>% pivot_longer(cols = 4:length(.), names_to = "taxon_code", values_to = "abund") %>% left_join(plots) %>% select(date, plot_number, taxon_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+
+viz.3 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_3_202108.csv") %>% pivot_longer(cols = 4:length(.), names_to = "taxon_code", values_to = "abund") %>% left_join(plots) %>% mutate(date = as.Date("2021-08-21")) %>% select(date, plot_number, taxon_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+
+all_visuals <- viz.1 %>% full_join(viz.2) %>% full_join(viz.3) %>% mutate(treatment_code = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
+
+write_csv(all_visuals, "../clean_data/SBHW_shade_visual_clean.csv")
+
+# all the data is now collated!
+
+# next, collate the infaunal surveys
+
+collections <- read_csv("../raw_data/infauna/SBHW_INFAUNA_collections.csv")
+
+file.list <- list.files("../raw_data/infauna/community_data", full.names = T)
+
+for (i in 1:length(file.list)){
+  df <- read_csv(file.list[i]) %>% mutate(collection_number = as.numeric(gsub("[^0-9]", "",file.list[i])))
+
+  if (i == 1){
+      df_all <- df
+  }
+  
+  if (i > 1){
+    df_all <- df_all %>% full_join(df) #%>% mutate_all(~replace_na(.,0))
+  }
+}
+
+infauna_all <- df_all %>% mutate_all(~replace_na(., 0)) %>% relocate(collection_number, .before = MYSP) %>% left_join(collections) %>% relocate(c(site_code, collection_date), .after = (collection_number))
+
+write_csv(infauna_all, "../clean_data/SBHW_infauna_clean.csv")
+
+```
+
+## Plotting & modeling
+
+```{r}
+
+```
+
+
+

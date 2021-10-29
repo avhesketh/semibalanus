@@ -152,7 +152,7 @@ Random effects will include:
 - transect nested within site
 
 ```{r, message=F, results="hide"}
-
+library(lme4)
 library(glmmTMB)
 library(GGally)
 library(DHARMa)
@@ -165,6 +165,12 @@ library(car)
 
 ```
 ```{r}
+
+mort.mod.0 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code), data = mort.model.df, family = binomial(link = "logit"))
+
+plot(density(residuals(mort.mod.0, type = "response"))) # has a long tail ... data are overdispersed ... need to look at other fixes.
+
+mort.mod.0.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code), data = mort.model.df, family = binomial(link = "logit"))
 
 mort.mod.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code), data = mort.model.df, family = tweedie())
 print(mort.mod.1)
@@ -210,9 +216,11 @@ First, a plot of mortality across sites, coded by temperature (note that sites a
 
 ```{r, echo = F}
 require(tidyverse)
-require(wesanderson)
+require(viridis)
 
-ggplot(data = mort.summary, aes(x = fct_reorder(site_code, longitude_degrees, min), y = average_mort*100, col = average_maxtemp)) + geom_point(size = 5) + scale_colour_gradientn(colours = wes_palette("Zissou1", type = "continuous", 10)) + geom_point(size = 5, pch = 1, color = "black") + theme_bw() +labs(y = "Mortality (%)", x = "Site", color = "Max daily temp. (ºC) \n during heat wave") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+ggplot(data = mort.summary, aes(x = average_maxtemp, y = average_mort*100)) + geom_point(size = 5) + scale_color_viridis() + geom_point(size = 5, pch = 1, color = "black") + theme_bw() +labs(y = "Mortality (%)", x = "Mean maximum daily temperature during heat wave (ºC)", col = "Aspect") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+
+ggplot(data = mort.summary, aes(x = average_maxtemp, y = average_mort*100, col = degrees_from_north)) + geom_point(size = 5) + scale_color_viridis() + geom_point(size = 5, pch = 1, color = "black") + theme_bw() +labs(y = "Mortality (%)", x = "Mean maximum daily temperature during heat wave (ºC)", col = "Aspect") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
 
 ```
 

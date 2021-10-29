@@ -22,6 +22,7 @@ library(glmmTMB)
 library(DHARMa)
 library(lme4)
 library(car)
+library(ggeffects)
 
 angle.data <- read_csv("../raw_data/mortality/SBC_MORT_angles.csv")
 
@@ -30,7 +31,6 @@ site.info <- read_csv("../raw_data/SBC_siteinformation.csv") %>% select(site_cod
 
 #join together the dataframes
 angle.calculate <- angle.data %>% full_join(site.info)
-
 
 # the compass orientation needs to be flipped by 180 degrees/pi radians
 # the angle needs to be converted from angle from vertical to angle from horizontal
@@ -45,38 +45,46 @@ solar.angles <- angle.correct %>% mutate(gamma = abs(orient_rad - solar_az_rad))
 
 # Modeling
 
-We may also want to integrate temperature information into the model to see if these two factors are together influential. But for now, keep the model simple. This looks like a beta distribution, so need to pull away from extremes to keep in (0,1).
+We may also want to integrate temperature information into the model to see if these two factors are together influential. But for now, keep the model simple. This looks like a beta distribution or 
 
 ```{r}
-angle.transform <- solar.angles %>% mutate(mort_beta = (prop_mort*(length(prop_mort)-1) + 0.5)/length(prop_mort), mort_percent = 100*prop_mort)
+library(lme4)
 
-angle.model.0 <- lmer(mort_percent ~ angle + (1+angle|site_code), data = angle.transform)
+angle.model.0 <- glmer(prop_mort ~ angle + (1+angle|site_code), family = binomial(link = "logit"), data = solar.angles)
 
-plot(angle.model.0)
+plot(density(resid(angle.model.0, type='deviance')))
 
-angle.model.1 <- glmmTMB(mort_beta ~ angle + (1+angle|site_code), data = angle.transform, family = beta_family())
+qqnorm(residuals(angle.model.0, type = "deviance"))
 
-plot(simulateResiduals(angle.model.1)) 
+# looks reasonable 
 
-angle.model.2 <- glmmTMB(mort_percent ~ angle + (1|site_code), data = angle.transform, family = tweedie())
+angle.model.1 <- update(angle.model.0, ~. -(1+angle|site_code) + (1|site_code))
 
-plot(simulateResiduals(angle.model.2))
+AIC(angle.model.0, angle.model.1) # allowing slope variation for each site is worse
 
-# of all these models, the Tweedie seems to be performing the best.
+# angle.model.1 it is!
 
-```
-```{r}
-summary(angle.model.2)
-Anova(angle.model.2)
+library(car)
+library(MuMIn)
+
+summary(angle.model.1)
+r.squaredGLMM(angle.model.1)
+
+Anova(angle.model.1)
 
 library(ggeffects)
 library(RColorBrewer)
+
 pal <- colorRampPalette(brewer.pal(6, "Dark2"))(6)
 
 set.seed(26)
-model.pred <- ggpredict(angle.model.2, terms = c("angle", "site_code"), type = "random")
+model.pred <- ggpredict(angle.model.1, terms = c("angle", "site_code"), type = "random") %>% rename(site_code = group)
 
-ggplot(data = solar.angles %>% rename(group = site_code), aes(x = angle, y = prop_mort*100, col = group)) + geom_point(size = 2) + labs(y = "Mortality (%)", x = "Substratum orientation (relative to direct sun = 0º)", col = "Site") + theme_classic() + scale_color_manual(values = pal) + scale_fill_manual(values = pal) + geom_line(data = model.pred, aes(x = x, y = predicted)) + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + ylim(c(0,100))
+model.glm <- glm(prop_mort ~ angle, family = "binomial", data = solar.angles)
+
+model.pred2 <- ggpredict(model.glm, terms = c("angle")) %>% select(-group)
+
+ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + geom_point(size = 2) + labs(y = "Proportion mortality", x = "Substratum orientation (relative to direct sun = 0º)", col = "Site") + theme_classic() + scale_color_manual(values = pal) + scale_fill_manual(values = pal) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_line(data = model.pred, aes(x = x, y = predicted)) + geom_smooth(method = "glm", method.args = list(family = "binomial"), aes(x = angle, y = prop_mort), col = "black")
 
 ```
 

@@ -46,18 +46,31 @@ mutate(time = toupper(str_remove_all(time, fixed(".")))) %>% mutate(time = parse
 
 temp.df.clean.aug <- temp.df.all.aug %>% na.omit() %>% select(-Unit) %>% separate(file_name, sep = "_", into = c("block","treatment","extra")) %>% select(-extra) %>% rename(date_time = 1, temperature_C = 2) %>% mutate(date_time = parse_date_time(date_time, "%d/%m/%y %I:%M:%S %p"))
 
-temp.clean <- temp.df.clean.aug %>%  full_join(temp.df.clean.july) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR")) %>% filter(date_time < "2021-08-21 6:00:00" & date_time > "2021-04-17 15:00:00")
+temp.clean <- temp.df.clean.aug %>%  full_join(temp.df.clean.july) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR")) %>% filter(date_time < "2021-08-21 6:00:00" & date_time > "2021-04-17 15:00:00") %>% unique()
 
 #write_csv(temp.clean, "../clean_data/SBHW_temp_clean.csv")
+
+# isolate low tide data only
+
+temp.rounded <- temp.clean %>% mutate(hour = hour(date_time)) %>% separate(date_time, into = c("date","time"), sep = " ") %>% unite(date_time, c(date, hour), sep = " ") %>% mutate(date_time = ymd_h(date_time)) %>% select(-time) 
+
+tides_cc <- read_delim("../raw_data/tides/tides_all_summer_CC.csv", col_names = c("date","junk","time","tz","tide_height_ft"), delim = " ") %>% mutate(hour = hour(time)) %>% select(-junk, -tz, -time) %>% unite(date_time, c(date, hour), sep = " ") %>% mutate(date_time = ymd_h(date_time), tide_height_m = tide_height_ft * 0.3048) %>% select(-tide_height_ft)
+
+temp.lowtide <- temp.rounded %>% left_join(tides_cc) %>% filter(tide_height_m <= 1.4)
 
 ```
 
 ```{r}
 
-temp.sep <- temp.clean %>% separate(date_time, into = c("date","time"), sep = " ")
-temp.summary <- temp.sep %>% group_by(date, treatment) %>% summarize(mean_temp = mean(temperature_C)) %>% mutate(date = date(date))
+temp.sep <- temp.lowtide %>% separate(date_time, into = c("date","time"), sep = " ", remove = F)
 
-ggplot(data = temp.summary, aes(x = date, y = mean_temp, col = treatment)) + geom_line() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Temperature (ºC)", color = "Treatment") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
+temp.hourly <- temp.lowtide %>% group_by(date_time, treatment) %>% summarize(mean_temp = mean(temperature_C)) %>% separate(date_time, into = c("date","time"), sep = " ", remove = F) %>% mutate(date_time = ymd_hms(date_time))
+
+temp.summary <- temp.sep %>% group_by(date, treatment) %>% summarize(mean_temp = mean(temperature_C), max_temp = max(temperature_C)) %>% mutate(date = date(date))
+
+ggplot(data = temp.summary %>% filter(date >= "2021-06-01" & date < "2021-07-15") , aes(x = date, y = max_temp, col = treatment)) + geom_line() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Mean daily max temperature (ºC)", color = "Treatment") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
+
+View(temp.clean)
 
 ```
 
@@ -65,19 +78,29 @@ The temperature is highest in the unshaded treatments (as expected) by (at times
 
 ```{r}
 
-temp.summary2 <- temp.sep %>% group_by(treatment, date) %>% summarize(mdmax_temp = max(temperature_C))
+temp.summary2 <- temp.sep %>% group_by(treatment, date) %>% summarize(mdmax_temp = max(temperature_C)) %>% mutate(trt_long = case_when(treatment == "SI" ~ "shaded intact", treatment == "UI" ~ "unshaded intact", treatment == "SR" ~ "shaded removal", treatment == "UR" ~ "unshaded removal"))
 
-ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = treatment)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Maximum Daily Temperature (ºC)", color = "Treatment") +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
+ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = trt_long)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Mean maximum daily temperature (ºC)", color = "Treatment") +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
 
 ```
 
-There's something odd going on here with one of the SI plots. Need to look into it a bit more.
+There's something odd going on here with one of the SI plots. Need to look into it a bit more. Solved! Excluded one plot that was problematic.
 
 ```{r}
+require(car)
+require(lme4)
 
-temp.model <- lm(mdmax_temp ~ treatment, data = temp.summary2 %>% filter(mdmax_temp < 50))
+temp.model <- lmer(temperature_C ~ treatment*date_time + (1|block), data = temp.lowtide)
+
 summary(temp.model)
-anova(temp.model)
+
+Anova(temp.model)
+
+max.temp.model <- lm(mdmax_temp ~ treatment, data = temp.summary2)
+
+TukeyHSD(aov(mdmax_temp ~ treatment, data = temp.summary2))
+summary(max.temp.model)
+Anova(max.temp.model)
 
 ```
 
@@ -131,18 +154,29 @@ barnacle.mort <- read_csv("../raw_data/shade/SBC_SHADE_semibalanusmort.csv") %>%
 
 plot.info <- read_csv("../raw_data/shade/SBC_SHADE_plot_info.csv")
 
-mort.complete <- barnacle.mort %>% left_join(plot.info) %>% filter((plot_number %in% c(15,35,36,40)) == F) %>% select(prop_mort, treatment_original_numeric, plot_number) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
+mort.complete <- barnacle.mort %>% left_join(plot.info) %>% filter((plot_number %in% c(15,35,36,40)) == F) %>% select(prop_mort, treatment_original_numeric, plot_number, block) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI"))
 
 mort.beds <- mort.complete %>% filter(treatment %in% c("SI","UI"))
 
-shade.mort.model <- lm(prop_mort ~ treatment, data = mort.beds)
+shade.mort.model <- glm(prop_mort ~ treatment, family = "binomial", data = mort.beds)
+
+plot(shade.mort.model)
+
+shade.mort.model.weights <- glm(prop_mort ~ treatment, family = "binomial", weights = treatment, data = mort.beds %>% mutate(treatment = case_when(treatment == "UI" ~ 1, treatment == "SI" ~ 2)))
+
+AIC(shade.mort.model, shade.mort.model.weights)
+
+# no weights
+
+summary(shade.mort.model)
+Anova(shade.mort.model)
 
 ```
 
 ```{r}
 summary(shade.mort.model)
 
-ggplot(mort.beds, aes(x = treatment, y = prop_mort, col = treatment)) + geom_boxplot() +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw() + scale_color_manual( values = c("skyblue4", "tomato4"))
+ggplot(mort.beds %>% mutate(treatment = case_when(treatment == "SI" ~ "shaded", treatment == "UI" ~ "unshaded")), aes(x = treatment, y = prop_mort, col = treatment)) + geom_boxplot() +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12)) + theme_bw() + scale_color_manual( values = c("skyblue4", "tomato4")) + labs(x = "Treatment", y = "Mortality (%)",col = "Treatment") + theme(legend.position = "none")
 
 ```
 
@@ -154,7 +188,7 @@ visuals <- read_csv("../raw_data/shade/SBC_SHADE_visual_3_202108.csv")
 
 # separate the cover and count data
 
-taxa <- read_csv("../raw_data/shade/SBC_SHADE_taxonomic_20211004.csv") %>% select(taxon_code, kingdom)
+taxa <- read_csv("../raw_data/SBC_taxonomic_20211026.csv") %>% select(taxon_code, kingdom)
 
 algae <- taxa %>% filter(kingdom != "Animalia") %>% select(-kingdom)
 animal <- taxa %>% filter(kingdom == "Animalia") %>% select(-kingdom)
@@ -176,7 +210,7 @@ diversity.algae.trts <- diversity.algae %>% full_join(plot.info) %>% select(-plo
 
 # animal diversity & abund
 
-visuals.animals <- visuals.long %>% right_join(animal) %>% pivot_wider(names_from = "taxon_code", values_from = "abund") %>% select(-c(GNOR:NEVE)) %>% na.omit()
+visuals.animals <- visuals.long %>% right_join(animal)  %>% pivot_wider(names_from = "taxon_code", values_from = "abund") %>% mutate_all(~replace_na(.,0)) %>% select(-c(GNOR:NEVE)) %>% na.omit()
 
 H <- diversity(visuals.animals)
 abund <- rowSums(visuals.animals %>% select(-plot_number))
@@ -288,3 +322,14 @@ anova(disp.y1)
 boxplot(disp.y1, xlab = "Treatment")
 
 ```
+
+## Barnacle recruitment in empty plots
+
+```{r}
+
+
+
+```
+
+
+
