@@ -5,44 +5,108 @@ date: "06/10/2021"
 output: html_document
 ---
 
-```{r}
-ibrary(vegan)
+```{r, results = F, echo = F}
+library(vegan)
+library(tidyverse)
+library(RColorBrewer)
+library(plotrix)
 
-collection.info <- read_csv("./raw_data/infauna/SBC_INFAUNA_collections.csv")
+collection.info <- read_csv("../raw_data/infauna/SBHW_INFAUNA_collections.csv")
+taxonomic.info <- read_csv("../raw_data/SBHW_taxonomic_20220105.csv") %>%  select(original_code, final_code, coarse_grouping)
 
-sample.files <- list.files("./raw_data/infauna/community_data/")
+sample.files <- list.files("../raw_data/infauna/community_data/")
 
 for (file in 1: length(sample.files)){
-  file.name = paste("./raw_data/infauna/community_data/", sample.files[file], sep = "")
-  infauna <- read_csv(file.name) %>% mutate(file_name = sample.files[file])
+  
+  file.name = paste("../raw_data/infauna/community_data/", sample.files[file], sep = "")
+  
+  infauna <- read_csv(file.name)
+  
+  infauna.sum <- infauna %>% mutate(replicate = seq(1:nrow(infauna))) %>% 
+    pivot_longer(cols = -replicate, names_to ="original_code", values_to = "abundance") %>% 
+    left_join(taxonomic.info) %>% 
+    select(-original_code) %>% 
+    group_by(replicate, final_code) %>% summarize(abundance = sum(abundance)) %>% 
+    pivot_wider(names_from = final_code, values_from = abundance) %>% mutate(file_name = sample.files[file])
+  
+  infauna.coarse <- infauna %>% 
+    pivot_longer(cols = 1:ncol(infauna), names_to ="original_code", values_to = "abundance") %>% 
+    left_join(taxonomic.info) %>% 
+    select(-original_code, -final_code) %>% 
+    group_by(coarse_grouping) %>% summarize(mean.abund = mean(abundance),se.abund = std.error(abundance)) %>% mutate(file_name = sample.files[file])
+  
   if (file == 1){
-    infauna.all <- infauna
+    infauna.all <- infauna.sum
+    infauna.all.coarse <- infauna.coarse
   }
   if (file > 1){
-    infauna.all <- infauna %>% full_join(infauna.all)
+    infauna.all <- infauna.sum %>% full_join(infauna.all)
+    infauna.all.coarse <- infauna.coarse %>% full_join(infauna.all.coarse)
   }
 }
+```
 
-infauna.clean <- infauna.all %>% replace(is.na(.), 0) %>% relocate(file_name, .before = ONBI) %>% separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info) %>% relocate(c(site_code, collection_date), .before = ONBI)
+#nMDS Analysis
+
+```{r}
+## start with the nmds analysis to visualize
+
+infauna.clean <- infauna.all %>% replace(is.na(.), 0) %>% separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info)
+
+# develop color palette
+
+full.pal <- colorRampPalette(brewer.pal(8, "Dark2"))(17)
+
+sites_cols <- read_csv("../raw_data/SBC_siteinformation.csv") %>% select(site_code) %>% arrange(site_code) %>% cbind(full.pal)
+
+infauna.summer <- infauna.clean %>% filter(collection_number %in% 3:12) %>% left_join(sites_cols)
 
 #get rid of everything and convert to matrix
-infauna.matrix <- infauna.clean %>% 
-  select(-collection_number, -site_code, -collection_date) 
+infauna.matrix <- infauna.summer %>% ungroup() %>% 
+  select(-collection_number, -site_code, -collection_date, -full.pal, -replicate) 
   
 # convert to matrix
 infauna.matrix <- as.matrix(infauna.matrix)
 
 # ready to analyze
-comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 400)
+comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 999, autotransform = T)
 
-tiff("community.tiff", units = "in", width = 6, height = 6, res = 450)
-
-oct_ord <- ordiplot(comm_oct, type = "none", xlim = c(-2,2), ylim = c(-2,2))
-points(oct_ord, "sites", cex = 0.7, col = "black")
-orditorp(oct_ord,display="species",col="grey30", cex = 0.8, air=1)
-ordiellipse(oct_ord, groups = comm_oct_factors$treatment, 
-            col = c("blue", "red"), label = TRUE)
-dev.off()
 
 ```
+```
+
+
+
+
+```
+```{r, echo=F, fig.align='center', fig.keep = "last", fig.show = "asis", message=FALSE, results=F, fig.dim = c(9,7)}
+
+ord <- ordiplot(comm.infauna, type = "none", xlim = c(-2,2), ylim = c(-2,2))
+points(ord, "sites", cex = 0.7, col = "black")
+orditorp(ord,display="species",col="grey30", cex = 0.8, air=1)
+ordiellipse(ord, groups = infauna.summer$site_code, 
+            col = c("#6E9E24", "#B96439", "#B98614", "#D59D08","#8A62AB",
+                    "#C16610", "#96A713", "#A66753", "#666666",
+                    "#1B9E77"), label = TRUE)
+dev.off()
+```
+
+
+
+This plot instead looks at # taxa defined by coarse groupings.
+
+```{r, results = T}
+
+infauna.clean.coarse <- infauna.all.coarse %>% 
+  separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info) %>% filter(collection_number %in% c(3:12)) %>% select(-collection_date, -collection_number) 
+
+barplot <- ggplot(aes(x = site_code, fill = coarse_grouping, y = mean.abund), 
+                  data = infauna.clean.coarse) +
+  geom_bar(position = "stack", stat = "identity", col = "grey20", lwd = 0.2) +
+  theme_classic() +
+  labs(y = "Mean abundance", x = "Site surveyed", fill = "Taxon")
+barplot
+
+```
+
 

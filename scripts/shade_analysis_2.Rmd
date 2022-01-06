@@ -11,6 +11,7 @@ output: html_document
 
 library(tidyverse)
 
+
 taxa <- read_csv("../raw_data/SBC_taxonomic_20211026.csv") %>% select(taxon_code)
 plots <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
 
@@ -54,7 +55,142 @@ write_csv(infauna_all, "../clean_data/SBHW_infauna_clean.csv")
 
 ```{r}
 
+library(glmmTMB)
+library(DHARMa)
+library(car)
+
+# PLOT/ANALYSIS 1: Bncle recruitment in unshaded plot
+
+barnacles <- all_visuals %>% filter(taxon_code %in% c("BAGL","CHDA", "SECA") & treatment %in% c(3, 4)) %>% mutate(date = as.Date(date))
+
+summary.bncles <- all_visuals %>% group_by(date) %>% summarize(bncle_total = sum(abund)) %>% View()
+View(barnacles)
+# middle survey has the most recruitment signal
+
+recruitment.peak <- barnacles %>% filter(date == "2021-07-07" | date == "2021-07-08") %>% group_by(plot_number, treatment_code) %>% summarize(total_abund = sum(abund)) %>% mutate(trt_long = case_when(treatment_code == "SR" ~ "shaded removal", treatment_code == "UR" ~ "unshaded removal"))
+
+ggplot(recruitment.peak, aes(x = treatment_code, y = total_abund, col = trt_long)) + geom_boxplot() + labs(x = "Treatment", y = "Total barnacle abundance", col = "Treatment") + theme_bw() + scale_color_manual(values = c("skyblue2", "tomato2"))
+
+mod.recruit <- glmmTMB(total_abund ~ treatment_code, data = recruitment.peak,
+                       family = nbinom1())
+
+plot(simulateResiduals(mod.recruit))
+summary(mod.recruit)
+Anova(mod.recruit)
+
 ```
+
+## Diversity trajectory??
+
+```{r}
+
+library(vegan)
+library(lubridate)
+library(lme4)
+
+visuals_wide <- all_visuals %>% pivot_wider(names_from = taxon_code, values_from = abund) 
+
+visuals_factors <- visuals_wide %>% select(1:4)
+
+visuals_matrix <- visuals_wide %>% select(5:length(.)) %>% mutate_all(~replace_na(.,0)) %>% as.matrix
+
+                                                                    
+specnumber(visuals_matrix)
+diversity.viz <- as.data.frame(diversity(visuals_matrix, index = "shannon"))
+
+df <- cbind(visuals_factors, diversity.viz) %>% rename(shannon = 5) %>% mutate(date = as.Date(str_replace_all(date,"2021-07-07","2021-07-08")), day =  yday(date))
+
+mod.diversity <- lm(shannon ~ day*treatment_code, data = df)
+plot(mod.diversity)
+plot(density(residuals(mod.diversity, type = "deviance")))
+summary(mod.diversity)
+
+TukeyHSD(aov(shannon ~ day*treatment_code, data = df))
+
+mixed.mod.diversity <- lmer(shannon ~ day*treatment + (1|plot_number),data =df)
+plot(mixed.mod.diversity)
+plot(density(residuals(mixed.mod.diversity, type = "deviance")))
+
+summary(mixed.mod.diversity)
+Anova(mixed.mod.diversity)
+
+AIC(mod.diversity, mixed.mod.diversity)
+
+df$pred <- predict(mod.diversity)
+
+df_summary <- df %>% group_by(day, date, treatment_code) %>% summarize(mean_div = mean(shannon), se_div = sd(shannon)/sqrt(length(shannon))) %>% mutate(trt_long = case_when(treatment_code == "SR" ~ "shaded removal", treatment_code == "UR" ~ "unshaded removal", treatment_code == "SI" ~ "shaded intact", treatment_code == "UI" ~ "unshaded intact" ))
+
+ggplot(df_summary, aes(x = date, y = mean_div, col = treatment_code)) + geom_point() + theme_bw() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Shannon diversity", col = "Treatment") + geom_smooth(method = "lm", se = F) + geom_errorbar(aes(ymax = mean_div + se_div, ymin = mean_div - se_div), width = 2)
+
+
+```
+
+## Infauna matrix
+
+```{r}
+library(ecotraj)
+library(vegan)
+
+infauna_matrix <- infauna_all %>% select(-site_code, -collection_number, -collection_date) %>% as.matrix
+
+infauna_factors <- infauna_all %>% select(site_code, collection_date) %>% unite(site_date, c(site_code, collection_date), sep = "_")
+
+cta_bray <- metaMDS(infauna_matrix, distance = "bray", k = 2, try = 999, autotransform = T)
+
+```
+
+## Community differences
+
+```{r echo=F, fig.align='center', fig.keep = "last", fig.show = "asis", message=FALSE, results=F, fig.dim = c(9,7)}
+
+
+cta_ord <- ordiplot(cta_bray, type = "none", xlim=c(-1,1),ylim = c(-1.5,1.5))
+points(cta_ord, what = "sites", col = "black")
+orditorp(cta_ord,display="species",col="grey30", cex = 0.8, air=1)
+ordiellipse(cta_ord, groups = infauna_factors$site_date, 
+            col = c("blue", "red"), label = TRUE)
+
+# not super interesting rn
+```
+
+
+## Infauna at CC site only
+
+```{r}
+plot.info <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
+
+infauna_cc <- read_csv("../raw_data/shade/SBHW_SHADE_infauna.csv") %>% rename(plot_number = plot_id) %>%  left_join(plot.info) %>% select(-plot_number, -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric)
+
+infauna_factors <- infauna_cc %>% select(treatment, block)
+infauna_matrix <- infauna_cc %>% select(-treatment, -block) %>% as.matrix()
+
+infauna_bray <- metaMDS(infauna_matrix, k=2, try = 999, autotransform = T)
+```
+
+
+```{r}
+infauna_ord <- ordiplot(infauna_bray, type = "none")
+points(infauna_ord, what = "sites", col = "black")
+orditorp(infauna_ord,display="species",col="grey30", cex = 0.8, air=1)
+ordiellipse(infauna_ord, groups = infauna_factors$treatment, 
+            col = c("tomato4","skyblue4"), lwd = 1.5)
+legend("right", col = c("skyblue4","tomato4"), legend = c("shaded","unshaded"), 
+       bty = "n", lty = 1, lwd = 2)
+
+perm.inf.cc <- adonis(infauna_matrix ~ treatment, data = infauna_factors)
+
+perm.inf.cc
+
+dist.inf.cc <- vegdist(infauna_matrix, method = "bray")
+
+disp.inf.cc <- betadisper(dist.inf.cc, type = "centroid", group = infauna_factors$treatment)
+
+anova(disp.inf.cc)
+boxplot(disp.inf.cc)
+
+```
+
+
 
 
 

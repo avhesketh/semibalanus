@@ -84,7 +84,7 @@ model.glm <- glm(prop_mort ~ angle, family = "binomial", data = solar.angles)
 
 model.pred2 <- ggpredict(model.glm, terms = c("angle")) %>% select(-group)
 
-ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + geom_point(size = 2) + labs(y = "Proportion mortality", x = "Substratum orientation (relative to direct sun = 0º)", col = "Site") + theme_classic() + scale_color_manual(values = pal) + scale_fill_manual(values = pal) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_line(data = model.pred, aes(x = x, y = predicted)) + geom_smooth(method = "glm", method.args = list(family = "binomial"), aes(x = angle, y = prop_mort), col = "black")
+ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + geom_point(size = 2) + labs(y = "Proportion mortality", x = "Substratum orientation (relative to direct sun = 0º)", col = "Site") + theme_classic() + scale_color_manual(values = pal) + scale_fill_manual(values = pal) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_line(data = model.pred, aes(x = x, y = predicted)) #+ geom_smooth(method = "glm", method.args = list(family = "binomial"), aes(x = angle, y = prop_mort), col = "black")
 
 ```
 

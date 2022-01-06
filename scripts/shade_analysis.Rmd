@@ -80,7 +80,7 @@ The temperature is highest in the unshaded treatments (as expected) by (at times
 
 temp.summary2 <- temp.sep %>% group_by(treatment, date) %>% summarize(mdmax_temp = max(temperature_C)) %>% mutate(trt_long = case_when(treatment == "SI" ~ "shaded intact", treatment == "UI" ~ "unshaded intact", treatment == "SR" ~ "shaded removal", treatment == "UR" ~ "unshaded removal"))
 
-ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = trt_long)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Mean maximum daily temperature (ºC)", color = "Treatment") +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
+ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = trt_long)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Mean maximum daily temperature (ºC)", color = "Treatment") + theme_bw()
 
 ```
 
@@ -104,55 +104,13 @@ Anova(max.temp.model)
 
 ```
 
-# Infaunal community
-
-```{r, message = F, results = "hide"}
-library(vegan)
-
-collection.info <- read_csv("../raw_data/shade/SBC_SHADE_plot_info.csv")
-survey.info <- read_csv("../raw_data/shade/SBC_SHADE_survey_info.csv")
-
-infauna.shade <- read_csv("../raw_data/shade/SBC_SHADE_infauna.csv") %>% rename(plot_number = plot_id) %>% left_join(collection.info) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR")) %>% select(-shore_level, -treatment_final_numeric)
-
-#get rid of everything and convert to matrix
-infauna.matrix <- infauna.shade %>% 
-  select(-plot_number, -block, -treatment)
-  
-# convert to matrix
-infauna.matrix <- as.matrix(infauna.matrix)
-
-# ready to analyze
-comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 400)
-
-# can't get ordplot to display in .Rmd file
-
-factors.infauna <-infauna.shade %>% select(treatment, block)
-
-perm.y1 <- adonis(infauna.matrix ~ treatment, data = factors.infauna,
-                  perm = 99)
-
-dist.y1 <- vegdist(infauna.matrix, method = "bray")
-disp.y1 <- betadisper(dist.y1, type = "centroid", group = factors.infauna$treatment)
-
-```
-
-```{r}
-perm.y1
-anova(disp.y1)
-boxplot(disp.y1)
-```
-
-```{r, echo = F}
-knitr::include_graphics("../outputs/community_shade.png")
-
-```
 
 # Mortality in shaded vs. unshaded
 
 ```{r, message = F, results = "hide"}
-barnacle.mort <- read_csv("../raw_data/shade/SBC_SHADE_semibalanusmort.csv") %>% mutate(prop_mort = (number_dead)/(number_live+number_dead)) %>% filter(prop_mort != "NaN")
+barnacle.mort <- read_csv("../raw_data/shade/SBHW_SHADE_semibalanusmort.csv") %>% mutate(prop_mort = (number_dead)/(number_live+number_dead)) %>% filter(prop_mort != "NaN")
 
-plot.info <- read_csv("../raw_data/shade/SBC_SHADE_plot_info.csv")
+plot.info <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
 
 mort.complete <- barnacle.mort %>% left_join(plot.info) %>% filter((plot_number %in% c(15,35,36,40)) == F) %>% select(prop_mort, treatment_original_numeric, plot_number, block) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI"))
 
@@ -176,7 +134,7 @@ Anova(shade.mort.model)
 ```{r}
 summary(shade.mort.model)
 
-ggplot(mort.beds %>% mutate(treatment = case_when(treatment == "SI" ~ "shaded", treatment == "UI" ~ "unshaded")), aes(x = treatment, y = prop_mort, col = treatment)) + geom_boxplot() +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12)) + theme_bw() + scale_color_manual( values = c("skyblue4", "tomato4")) + labs(x = "Treatment", y = "Mortality (%)",col = "Treatment") + theme(legend.position = "none")
+ggplot(mort.beds %>% mutate(treatment = case_when(treatment == "SI" ~ "shaded", treatment == "UI" ~ "unshaded")), aes(x = treatment, y = prop_mort, col = treatment)) + geom_boxplot() + theme_bw() + scale_color_manual( values = c("skyblue4", "tomato4")) + labs(x = "Treatment", y = "Mortality (%)",col = "Treatment") + theme(legend.position = "none")
 
 ```
 
@@ -184,7 +142,7 @@ Clearly, having a shade positively affected barnacle survival. What about specie
 
 ```{r,message = F, results = "hide"}
 
-visuals <- read_csv("../raw_data/shade/SBC_SHADE_visual_3_202108.csv")
+visuals <- read_csv("../raw_data/shade/SBHW_SHADE_visual_3_202108.csv")
 
 # separate the cover and count data
 
@@ -300,10 +258,12 @@ Moral of the story: The animal component of the community seems way more affecte
 ```{r, message=FALSE, results = "hide"}
 comm.visual <- visuals %>% select(-plot_number)
 comm.visual.matrix <- as.matrix(comm.visual)
+View(visuals)
+comm.visual <- metaMDS(comm.visual.matrix, k = 2, try = 999, autotransform = T)
 
-comm.visual.shade <- metaMDS(comm.visual.matrix, k = 2, try = 400)
+treatment.codes <- as.data.frame(plot.info$treatment_original_numeric) %>% rename(treatment = 1) 
 
-treatments.codes <- as.data.frame(plot.info$treatment_original_numeric) %>% rename(treatment_number = 1) %>% mutate(treatment_code = case_when(treatment_number == 1 ~ "UI", treatment_number == 2 ~ "SI", treatment_number == 3 ~ "UR", treatment_number == 4 ~ "SR"))
+
 ```
 
 ```{r}
@@ -311,23 +271,27 @@ knitr::include_graphics("../outputs/community_visual_shade.png")
 ```
 
 ```{r, results ="hide",message=FALSE}
-perm.y1 <- adonis(comm.visual.matrix ~ treatment_code, data = treatments.codes, perm = 99)
+perm.y1 <- adonis(comm.visual.matrix ~ treatment, data = treatment.codes, perm = 99)
 perm.y1
 
 dist.y1 <- vegdist(comm.visual.matrix, method = "bray")
 
-disp.y1 <- betadisper(dist.y1, type = "centroid", group = treatments.codes$treatment_code)
+disp.y1 <- betadisper(dist.y1, type = "centroid", group = treatment.codes$treatment)
 anova(disp.y1)
 
 boxplot(disp.y1, xlab = "Treatment")
 
 ```
 
-## Barnacle recruitment in empty plots
 
 ```{r}
 
-
+comm_ord <- ordiplot(comm.visual, type = "none")
+points(comm_ord, what = "sites", col = "black")
+orditorp(comm_ord, display="species",col="grey30", air=1)
+ordiellipse(comm_ord, groups = treatment.codes$treatment, 
+            col = c("tomato4","skyblue4", "tomato2","skyblue2"), lwd = 1.5)
+legend("bottom", col = c("tomato4","skyblue4", "tomato2","skyblue2"), legend = c("unshaded intact","shaded intact", "unshaded removal","shaded removal"), bty = "n", lty = 1, lwd = 2)
 
 ```
 
