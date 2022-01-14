@@ -17,12 +17,9 @@ Data were collected at five sites in haphazardly placed quadrats. The response v
 ```{r, include = F, results="hide"}
 # first, load in the relevant packages and data
 
-library(tidyverse)
-library(glmmTMB)
-library(DHARMa)
-library(lme4)
-library(car)
-library(ggeffects)
+pkgs <- c("tidyverse", "glmmTMB", "DHARMa","lme4","car","ggeffects")
+lapply(pkgs, library, character=T)
+rm(pkgs)
 
 angle.data <- read_csv("../raw_data/mortality/SBC_MORT_angles.csv")
 
@@ -45,7 +42,7 @@ solar.angles <- angle.correct %>% mutate(gamma = abs(orient_rad - solar_az_rad))
 
 # Modeling
 
-We may also want to integrate temperature information into the model to see if these two factors are together influential. But for now, keep the model simple. This looks like a beta distribution or 
+We may also want to integrate temperature information into the model to see if these two factors are together influential. But for now, keep the model simple. 
 
 ```{r}
 library(lme4)
@@ -75,7 +72,10 @@ Anova(angle.model.1)
 library(ggeffects)
 library(RColorBrewer)
 
-pal <- colorRampPalette(brewer.pal(6, "Dark2"))(6)
+site.levels <- as.data.frame(c("WBN","SP","SA","FC","TE","TS")) %>% rename(site_code = 1) 
+col.conversion <- site.levels %>% left_join(site_info) %>% select(full.pal)
+col.levels <- col.conversion$full.pal
+site.levels <- site.levels$site_code
 
 set.seed(26)
 model.pred <- ggpredict(angle.model.1, terms = c("angle", "site_code"), type = "random") %>% rename(site_code = group)
@@ -84,7 +84,11 @@ model.glm <- glm(prop_mort ~ angle, family = "binomial", data = solar.angles)
 
 model.pred2 <- ggpredict(model.glm, terms = c("angle")) %>% select(-group)
 
-ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + geom_point(size = 2) + labs(y = "Proportion mortality", x = "Substratum orientation (relative to direct sun = 0º)", col = "Site") + theme_classic() + scale_color_manual(values = pal) + scale_fill_manual(values = pal) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_line(data = model.pred, aes(x = x, y = predicted)) #+ geom_smooth(method = "glm", method.args = list(family = "binomial"), aes(x = angle, y = prop_mort), col = "black")
+solar.angles$site_code <- factor(solar.angles$site_code, levels = site.levels)
+
+angles.plot <- ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + geom_point(size = 2) + labs(y = "Proportion mortality", x = "Substratum orientation (relative to direct sun = 0º)", col = "Site") + theme_classic() + scale_color_manual(values = col.levels) + scale_fill_manual(values = col.levels) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_line(data = model.pred, aes(x = x, y = predicted)) + geom_smooth(method = "glm", method.args = list(family = "binomial"), aes(x = angle, y = prop_mort), col = "black")
+
+ggsave(angles.plot, filename = "../outputs/Fig4.png", dpi = 1200, height = 2.5, width = 3.5, units = "in", scale = 1.5)
 
 ```
 

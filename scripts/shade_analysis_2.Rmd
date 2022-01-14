@@ -11,17 +11,16 @@ output: html_document
 
 library(tidyverse)
 
-
-taxa <- read_csv("../raw_data/SBC_taxonomic_20211026.csv") %>% select(taxon_code)
+taxa <- read_csv("../raw_data/SBHW_taxonomic_20220105.csv") %>%  select(original_code, final_code)
 plots <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
 
-viz.1 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_1_20210414.csv") %>% pivot_longer(cols = 4:length(.), names_to = "taxon_code", values_to = "abund") %>% left_join(plots) %>% select(date, plot_number, taxon_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+viz.1 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_1_20210414.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% select(date, plot_number, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
 
-viz.2 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_2_20210708.csv") %>% pivot_longer(cols = 4:length(.), names_to = "taxon_code", values_to = "abund") %>% left_join(plots) %>% select(date, plot_number, taxon_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+viz.2 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_2_20210708.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% select(date, plot_number, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
 
-viz.3 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_3_202108.csv") %>% pivot_longer(cols = 4:length(.), names_to = "taxon_code", values_to = "abund") %>% left_join(plots) %>% mutate(date = as.Date("2021-08-21")) %>% select(date, plot_number, taxon_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+viz.3 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_3_202108.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% mutate(date = as.Date("2021-08-21")) %>% select(date, plot_number, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
 
-all_visuals <- viz.1 %>% full_join(viz.2) %>% full_join(viz.3) %>% mutate(treatment_code = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
+all_visuals <- viz.1 %>% full_join(viz.2) %>% full_join(viz.3) %>% mutate(treatment_code = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR")) %>% select(-original_code)
 
 write_csv(all_visuals, "../clean_data/SBHW_shade_visual_clean.csv")
 
@@ -59,17 +58,17 @@ library(glmmTMB)
 library(DHARMa)
 library(car)
 
-# PLOT/ANALYSIS 1: Bncle recruitment in unshaded plot
+# PLOT/ANALYSIS 1: Barnacle recruitment in unshaded plot
 
-barnacles <- all_visuals %>% filter(taxon_code %in% c("BAGL","CHDA", "SECA") & treatment %in% c(3, 4)) %>% mutate(date = as.Date(date))
+barnacles <- all_visuals %>% filter(final_code %in% c("BAGL","CHDA", "SECA") & treatment %in% c(3, 4)) %>% mutate(date = as.Date(date))
 
-summary.bncles <- all_visuals %>% group_by(date) %>% summarize(bncle_total = sum(abund)) %>% View()
-View(barnacles)
+summary.bncles <- all_visuals %>% group_by(date) %>% summarize(bncle_total = sum(abund))
+
 # middle survey has the most recruitment signal
 
 recruitment.peak <- barnacles %>% filter(date == "2021-07-07" | date == "2021-07-08") %>% group_by(plot_number, treatment_code) %>% summarize(total_abund = sum(abund)) %>% mutate(trt_long = case_when(treatment_code == "SR" ~ "shaded removal", treatment_code == "UR" ~ "unshaded removal"))
 
-ggplot(recruitment.peak, aes(x = treatment_code, y = total_abund, col = trt_long)) + geom_boxplot() + labs(x = "Treatment", y = "Total barnacle abundance", col = "Treatment") + theme_bw() + scale_color_manual(values = c("skyblue2", "tomato2"))
+ggplot(recruitment.peak, aes(x = treatment_code, y = total_abund, fill = trt_long)) + geom_boxplot() + labs(x = "Treatment", y = "Total barnacle abundance", fill = "Treatment") + theme_classic() + scale_fill_manual(values = c("skyblue2", "tomato2")) + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none")
 
 mod.recruit <- glmmTMB(total_abund ~ treatment_code, data = recruitment.peak,
                        family = nbinom1())
@@ -88,7 +87,7 @@ library(vegan)
 library(lubridate)
 library(lme4)
 
-visuals_wide <- all_visuals %>% pivot_wider(names_from = taxon_code, values_from = abund) 
+visuals_wide <- all_visuals %>% pivot_wider(names_from = original_code, values_from = abund) 
 
 visuals_factors <- visuals_wide %>% select(1:4)
 
@@ -142,6 +141,7 @@ cta_bray <- metaMDS(infauna_matrix, distance = "bray", k = 2, try = 999, autotra
 ## Community differences
 
 ```{r echo=F, fig.align='center', fig.keep = "last", fig.show = "asis", message=FALSE, results=F, fig.dim = c(9,7)}
+
 
 
 cta_ord <- ordiplot(cta_bray, type = "none", xlim=c(-1,1),ylim = c(-1.5,1.5))

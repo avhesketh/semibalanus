@@ -15,7 +15,7 @@ Following the heat dome of 2021, my goal was to document resultant impacts on th
 
 ## Data involved
 
-The response, barnacle mortality, is a percentage value obtained by counting the number of live and number of dead barnacles present in 12.7 x 12.7 cm quadrats along haphazardly placed transects at each site (10 quadrats/transect, 1-3 transects per site). Algal cover and the number of anemones (<i>Anthopleura elegantissima</i>) in each quadrat were documented in most cases to serve as covariates.
+The response, barnacle mortality, is a percentage value obtained by counting the number of live and number of dead barnacles present in 12.7x12.7 cm quadrats along haphazardly placed transects at each site (10 quadrats/transect, 1-3 transects per site). Algal cover and the number of anemones (<i>Anthopleura elegantissima</i>) in each quadrat were documented in most cases to serve as covariates.
 
 Temperature data was obtained from Climate Canada. While numerous temperature metrics may be suitable, we will attempt to use the a) mean daily maximum temperature during the heat dome period in British Columbia (June 25-29), and b) mean daily maximum temperature during the start of summer to the time of each mortality survey.
 
@@ -65,8 +65,7 @@ temp.df.rename <- temp.df.all %>% rename("date" = 1, "year" = 2,"month" = 3, "da
 # need to next associate each site with a sampling date, and filter out any temp data that was recorded after
 
 survey.info <- read_csv("../raw_data/SBC_siteinformation.csv") %>% 
-  select(site_code, latitude_degrees, longitude_degrees, mortality, mortality_survey, aspect) %>% 
-  na.omit() %>% mutate(degrees_from_north = case_when(aspect == "N" ~ 0, aspect == "S" ~ 180, aspect == "W" ~ 90, aspect == "E" ~ 90, aspect == "NW" ~ 45, aspect == "SW" ~ 135, aspect == "NE" ~ 45, aspect == "SE" ~ 135))
+  select(site_code, latitude_degrees, longitude_degrees, mortality, mortality_survey, degrees_from_north)  %>% na.omit() 
 
 survey.dates <- survey.info %>% select(site_code, mortality_survey)
 
@@ -78,14 +77,14 @@ required.temp.data <- temp.df.rename %>% right_join(survey.dates) %>%
 # now summarize mean daily temperature values that we care about across whole period
 
 temp.summary <- required.temp.data %>% 
-  group_by(site_code) %>% summarize(mean_daily_temp = mean(mean_temp_C, na.rm=T), mean_daily_max_temp = mean(max_temp_C, na.rm=T))
+  group_by(site_code) %>% summarize(mean_daily_temp = mean(mean_temp_C, na.rm=T), mean_daily_max_temp = mean(max_temp_C, na.rm=T)) %>% mutate(site_code = if_else(site_code == "BS", "WBS", site_code))
 
 # now just for the heat wave period
 
 temp.hw.only <- temp.df.rename %>% filter(date <= "2021-06-29" & date >= "2021-06-25")
 
 temp.hw.summary <- temp.hw.only %>% 
-  group_by(site_code) %>% summarize(mean_daily_temp_hw = mean(mean_temp_C, na.rm=T), mean_daily_max_temp_hw = mean(max_temp_C, na.rm=T))
+  group_by(site_code) %>% summarize(mean_daily_temp_hw = mean(mean_temp_C, na.rm=T), mean_daily_max_temp_hw = mean(max_temp_C, na.rm=T)) %>% mutate(site_code = if_else(site_code == "BS", "WBS", site_code))
 
 # join to site information data frame
 
@@ -121,10 +120,10 @@ with.tides <- explanatory.variables %>% left_join(tides_summary)
 # now to get response data read in
 
 mortality <- read_csv("../raw_data/mortality/SBC_MORT_surveys.csv") %>% 
-  select(-cover_live, -cover_dead, -algal_cover_per25sq) %>% filter((site_code == "CP" & transect == 3) == F)
+  select(-cover_live, -cover_dead, -algal_cover_per25sq)
 
 mort.model.df <- mortality %>% full_join(with.tides) %>% 
-  mutate(prop_dead = number_dead/(number_dead+number_live))
+  mutate(prop_dead = number_dead/(number_dead+number_live)) %>% filter(is.nan(prop_dead) == F)
 
 ```
 ```{r}
@@ -152,32 +151,29 @@ Random effects will include:
 - transect nested within site
 
 ```{r, message=F, results="hide"}
-library(lme4)
-library(glmmTMB)
-library(GGally)
-library(DHARMa)
-library(car)
+pkgs <- c("tidyverse", "glmmTMB", "DHARMa","lme4","car","ggeffects", "GGally")
+lapply(pkgs, library, character=T)
+rm(pkgs)
 ```
 
 ```{r}
 # check correlation of temperature variables
 #ggpairs(mort.model.df %>% select(mean_daily_max_temp,mean_daily_max_temp_hw,mean_daily_temp,mean_daily_temp_hw))
 
-```
-```{r}
-
 mort.mod.0 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code), data = mort.model.df, family = binomial(link = "logit"))
 
 plot(density(residuals(mort.mod.0, type = "response"))) # has a long tail ... data are overdispersed ... need to look at other fixes.
 
-mort.mod.0.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code), data = mort.model.df, family = binomial(link = "logit"))
+mort.mod.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code/transect), data = mort.model.df, family = tweedie())
 
-mort.mod.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code), data = mort.model.df, family = tweedie())
-print(mort.mod.1)
-# I can't add in a nested random variable for transect within site without causing convergence issues.
+plot(simulateResiduals(mort.mod.1)) # this seems to work. 
 
-plot(simulateResiduals(mort.mod.1))
+#try the beta model since this is more correct
 
+mort.mod.2 <- glmmTMB((prop_dead*nrow(mort.model.df)+0.5)/nrow(mort.model.df) ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code/transect), data = mort.model.df, family = beta_family())
+
+plot(simulateResiduals(mort.mod.2)) # the error distribution family seems wrong. Stick with Tweedie!
+?metaMDS
 ```
 
 The residuals look reasonable!
@@ -187,24 +183,17 @@ The residuals look reasonable!
 summary(mort.mod.1)
 plot(residuals(mort.mod.1))
 
-x <- predict(mort.mod.1, type = "response")
-y <- mort.mod.1$frame$prop_dead
-cor(y,x)^2
-
-
 ```
  
 ```{r}
-Anova(mort.mod.1)
 
+Anova(mort.mod.1)
 
 ```
 
 ```{r, include=F, results="hide"}
 
 mort.summary <- mort.model.df %>% mutate(site_code = factor(site_code)) %>% group_by(site_code, longitude_degrees, degrees_from_north, mean_low_tide_time) %>% summarize(average_mort = mean(prop_dead, na.rm = T), average_maxtemp = mean(mean_daily_max_temp_hw)) %>% mutate(site_code = factor(site_code))
-
-library(wesanderson)
 
 ```
 
@@ -217,19 +206,22 @@ First, a plot of mortality across sites, coded by temperature (note that sites a
 ```{r, echo = F}
 require(tidyverse)
 require(viridis)
+library(wesanderson)
+library(broom)
+View(predict.mort)
 
-ggplot(data = mort.summary, aes(x = average_maxtemp, y = average_mort*100)) + geom_point(size = 5) + scale_color_viridis() + geom_point(size = 5, pch = 1, color = "black") + theme_bw() +labs(y = "Mortality (%)", x = "Mean maximum daily temperature during heat wave (ºC)", col = "Aspect") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+new.dat <- data.frame(degrees_from_north = mort.model.df$degrees_from_north, 
+                      mean_daily_max_temp_hw = median(mort.model.df$mean_daily_max_temp_hw),
+                      algal_prop_cover = median(mort.model.df$algal_prop_cover, na.rm = T),
+                      mean_low_tide_time = median(mort.model.df$mean_low_tide_time),
+                      site_code = mort.model.df$site_code, transect = mort.model.df$transect)
+new.dat$fit <- predict(mort.mod.1, new.dat %>% na.omit(), type = "response")
 
-ggplot(data = mort.summary, aes(x = average_maxtemp, y = average_mort*100, col = degrees_from_north)) + geom_point(size = 5) + scale_color_viridis() + geom_point(size = 5, pch = 1, color = "black") + theme_bw() +labs(y = "Mortality (%)", x = "Mean maximum daily temperature during heat wave (ºC)", col = "Aspect") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+mort.plot <- ggplot(data = mort.model.df, aes(col = degrees_from_north, y = prop_dead*100, x = mean_daily_max_temp_hw)) + geom_jitter(size = 2, width = 0.2, alpha = 0.7) + scale_color_gradientn(colors = wes_palette("Zissou1", 20, type = "continuous"), limits = c(0,180)) + theme_classic() + labs(y = "Mortality (%)", col = "Direction relative to north (º)", x = "Mean maximum daily temperature (ºC)") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_smooth(aes(y = fit*100), data= new.dat, method = "lm", se = T, col= "black") + theme(legend.direction = "horizontal", legend.position = "bottom") 
+mort.plot
+
+ggsave(filename = "../outputs/Fig3.png", dpi = 1200, mort.plot, height = 3, width = 3.5, units = "in", scale = 1.5)
 
 ```
 
-```{r}
-ggplot(data = mort.summary, aes(x = degrees_from_north, y = average_mort*100)) + geom_point(size = 5) + geom_point(size = 5, pch = 1, color = "black") + theme_bw() +labs(y = "Mortality (%)", x = "Dominant shore aspect (degrees away from north = 0º)") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14))
-```
-
-
-Understandable, then, why there is no effect of temperature in the model. Or longitude. The patterns are all over the place. I suspect this is due to differences in aspect, which may be more important than prevailing air temperature.
-
-- some metric of distance from outer coast is probably better than longitude. Maybe use qGIS?
-- some weather data may not be accurate (in particular, for Calvert Island)
+No real patterns, which is cool -- across site factors can't explain too much of the variation in mortality.

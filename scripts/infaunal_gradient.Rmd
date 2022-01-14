@@ -5,23 +5,28 @@ date: "06/10/2021"
 output: html_document
 ---
 
-```{r, results = F, echo = F}
-library(vegan)
-library(tidyverse)
-library(RColorBrewer)
-library(plotrix)
+```{r, results = 'hide', echo = F, message = F}
+# load packages
+pkgs <- c("vegan", "vegan3d", "tidyverse", "RColorBrewer", "plotrix", "glmmTMB", "viridis", "patchwork")
+lapply(pkgs, library, character = T)
+rm(pkgs)
 
+# load relevant data: collection info (associates number of collection with site code and collection date)
 collection.info <- read_csv("../raw_data/infauna/SBHW_INFAUNA_collections.csv")
+# load taxonomic data: contains information about taxonomic groupings and authorities, species codes, etc.
 taxonomic.info <- read_csv("../raw_data/SBHW_taxonomic_20220105.csv") %>%  select(original_code, final_code, coarse_grouping)
 
+# will need to read all the files for all collections ... list all the file names in this directory for reading in
 sample.files <- list.files("../raw_data/infauna/community_data/")
 
+# this loop takes a file and loads it in, capturing information about the collection number from the numeric component of the file namem, and joins these in wide format
 for (file in 1: length(sample.files)){
   
   file.name = paste("../raw_data/infauna/community_data/", sample.files[file], sep = "")
   
   infauna <- read_csv(file.name)
   
+  # these data contain taxa at their lowest recorded taxonomic level
   infauna.sum <- infauna %>% mutate(replicate = seq(1:nrow(infauna))) %>% 
     pivot_longer(cols = -replicate, names_to ="original_code", values_to = "abundance") %>% 
     left_join(taxonomic.info) %>% 
@@ -29,6 +34,7 @@ for (file in 1: length(sample.files)){
     group_by(replicate, final_code) %>% summarize(abundance = sum(abundance)) %>% 
     pivot_wider(names_from = final_code, values_from = abundance) %>% mutate(file_name = sample.files[file])
   
+  # these data are for coarse taxonomic groupings
   infauna.coarse <- infauna %>% 
     pivot_longer(cols = 1:ncol(infauna), names_to ="original_code", values_to = "abundance") %>% 
     left_join(taxonomic.info) %>% 
@@ -49,19 +55,21 @@ for (file in 1: length(sample.files)){
 #nMDS Analysis
 
 ```{r}
-## start with the nmds analysis to visualize
+## start with the nmds analysis to visualize differences between sites
+# this will go in the supplemental, but the PERMANOVA results can go in the main text
 
 infauna.clean <- infauna.all %>% replace(is.na(.), 0) %>% separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info)
 
-# develop color palette
+# bring in color palette from maps script
 
-full.pal <- colorRampPalette(brewer.pal(8, "Dark2"))(17)
+palette <- site_info %>% select(site_code, full.pal)
+View(infauna.clean)
+# filter by time: only collections made at the end of summer 2021 (NOT 1 and 2)
+infauna.summer <- infauna.clean %>% filter(collection_number %in% 3:12) %>% left_join(palette)
+col.levels <- infauna.summer$full.pal %>% unique()
+site.levels <- infauna.summer$site_code %>% unique()
 
-sites_cols <- read_csv("../raw_data/SBC_siteinformation.csv") %>% select(site_code) %>% arrange(site_code) %>% cbind(full.pal)
-
-infauna.summer <- infauna.clean %>% filter(collection_number %in% 3:12) %>% left_join(sites_cols)
-
-#get rid of everything and convert to matrix
+#get rid of everything not related to species abundance and convert to matrix for nMDS
 infauna.matrix <- infauna.summer %>% ungroup() %>% 
   select(-collection_number, -site_code, -collection_date, -full.pal, -replicate) 
   
@@ -69,8 +77,13 @@ infauna.matrix <- infauna.summer %>% ungroup() %>%
 infauna.matrix <- as.matrix(infauna.matrix)
 
 # ready to analyze
-comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 999, autotransform = T)
+comm.infauna <- metaMDS(infauna.matrix, k = 3, try = 999, autotransform = T)
+stressplot(comm.infauna) # plot stress
+comm.infauna$stress # print stress of final model (ok with 2 dimensions, but not excellent)
+# if you try replotting with 3 dimensions, stress is <0.2, so better to have all 3
 
+#PERMANOVA
+adonis(infauna.matrix~site_code, data = infauna.summer)
 
 ```
 ```
@@ -81,14 +94,34 @@ comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 999, autotransform = T)
 ```
 ```{r, echo=F, fig.align='center', fig.keep = "last", fig.show = "asis", message=FALSE, results=F, fig.dim = c(9,7)}
 
-ord <- ordiplot(comm.infauna, type = "none", xlim = c(-2,2), ylim = c(-2,2))
-points(ord, "sites", cex = 0.7, col = "black")
-orditorp(ord,display="species",col="grey30", cex = 0.8, air=1)
-ordiellipse(ord, groups = infauna.summer$site_code, 
-            col = c("#6E9E24", "#B96439", "#B98614", "#D59D08","#8A62AB",
-                    "#C16610", "#96A713", "#A66753", "#666666",
-                    "#1B9E77"), label = TRUE)
-dev.off()
+## ggplot of first two NMDS axes
+
+data.scores <- as.data.frame(scores(comm.infauna))
+data.scores$site_code <- infauna.summer$site_code
+data.scores$color <- infauna.summer$full.pal
+data.scores <- data.scores %>% group_by(site_code,color) %>% mutate(mean.x = mean(NMDS1), mean.y = mean(NMDS2)) %>% ungroup() %>% mutate(site_code = factor(site_code, levels = site.levels), color=factor(color, levels = col.levels)) 
+
+species.scores <- as.data.frame(scores(comm.infauna, "species"))
+species.scores$species <- rownames(species.scores) 
+
+infauna.ordination <- ggplot() + 
+  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=site_code),size=3, alpha = 0.8) + # add the point markers
+  geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size = 3, alpha=0.7) +
+  coord_equal() +
+  theme_bw() +
+  scale_color_manual(values = col.levels) +
+  geom_segment(aes(x = NMDS1, y = NMDS2, xend = mean.x, yend = mean.y, col = site_code), data = data.scores, alpha = 0.7) +
+  geom_text(data=data.scores,aes(x=mean.x, mean.y,label=site_code),size=4, alpha = 0.7, col = "grey20" ) +  # add the site labels 
+  #geom_text(aes(x = 0.9, y = 0.6, label = paste("Stress = ", round(comm.infauna$stress,4))),cex = 4) +
+  labs(color = "Site code", x = "Axis 1", y = "Axis 2") +
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+
+infauna.ordination
+ggsave(filename = "../outputs/S1Fig1.png", infauna.ordination, dpi = 1200)
+
 ```
 
 
@@ -97,16 +130,77 @@ This plot instead looks at # taxa defined by coarse groupings.
 
 ```{r, results = T}
 
-infauna.clean.coarse <- infauna.all.coarse %>% 
-  separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info) %>% filter(collection_number %in% c(3:12)) %>% select(-collection_date, -collection_number) 
+site.levels <- as.data.frame(c("WBS","PP","BO","KE","TP","SP","SA","SN","TE","TK")) %>% rename(site_code = 1) 
+col.conversion <- site.levels %>% left_join(site_info) %>% select(full.pal)
+col.levels <- col.conversion$full.pal
+site.levels <- site.levels$site_code
 
-barplot <- ggplot(aes(x = site_code, fill = coarse_grouping, y = mean.abund), 
+infauna.clean.coarse <- infauna.all.coarse %>% 
+  separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info) %>% filter(collection_number %in% c(3:12)) %>% select(-collection_date, -collection_number) %>% mutate(site_code = factor(site_code, levels = site.levels))
+
+barplot.abund <- ggplot(aes(x = site_code, fill = coarse_grouping, y = mean.abund), 
                   data = infauna.clean.coarse) +
-  geom_bar(position = "stack", stat = "identity", col = "grey20", lwd = 0.2) +
+  geom_bar(position = "stack", stat = "identity", col = "grey70", lwd = 0.2, width = 0.8) +
   theme_classic() +
-  labs(y = "Mean abundance", x = "Site surveyed", fill = "Taxon")
-barplot
+  labs(y = "Mean abundance", x = "Collection site", fill = "Taxon") +
+  scale_fill_viridis_d(option = "plasma") +
+  theme(axis.title = element_text(size = 24), axis.text = element_text(size = 20),
+        legend.title=element_text(size = 24), legend.text = element_text(size = 20))
+barplot.abund
+
+ggsave(filename = "../outputs/Fig2C.png", barplot.abund, dpi = 1200, width = 14, height = 7, units = "in")
 
 ```
 
+```{r}
+
+# how many taxa @ each site?
+
+# get Shannon diversity and richness from matrix
+H <- diversity(infauna.matrix, "shannon")
+
+infauna.richness <- infauna.summer %>% select(site_code, replicate)
+richness <- with(infauna.richness, specnumber(infauna.matrix))
+
+# join with data to incude informative factors
+infauna.diversity <- cbind(cbind(infauna.summer, richness),H) %>% rename(richness = 55, Shannon_diversity = 56) %>% mutate(site_code = factor(site_code, levels = site.levels))
+
+infauna.div.summary <- infauna.diversity %>% group_by(site_code, full.pal) %>% summarize(mean.rich = mean(richness), se.rich = std.error(richness), mean.H = mean(Shannon_diversity), se.H = std.error(Shannon_diversity)) %>% mutate(site_code = factor(site_code, levels = site.levels))
+
+color.col <- arrange(infauna.diversity, by_group = site_code) %>% ungroup() %>% select(full.pal) %>% unique()
+col.levels <- color.col$full.pal
+
+infauna.div.summary2 <- infauna.div.summary %>% mutate(full.pal = factor(full.pal, levels = col.levels))
+
+diversity.plot <- ggplot(aes(x = site_code, y = H, fill = site_code), data = infauna.diversity) +
+  #geom_bar(stat = "identity", position = "dodge", width = 0.8) +
+  #geom_errorbar(aes(ymax = mean.H + se.H, ymin = mean.H-se.H), width = 0.2) +
+  geom_boxplot() +
+  labs(x = "Collection site", y = "Mean Shannon diversity") + 
+  scale_fill_manual(values = col.levels) +
+  theme_classic()+
+  theme(axis.title = element_text(size = 24), axis.text = element_text(size = 20), legend.position = "none")
+diversity.plot
+
+ggsave(filename = "../outputs/Fig2B.png", diversity.plot, dpi = 1200)
+
+# final panel: species richness, color coded by site
+
+richness.plot <- ggplot(aes(x = site_code, y = richness, fill = site_code), data = infauna.diversity) +
+  #geom_bar(stat = "identity", position = "dodge", width = 0.8) +
+  #geom_errorbar(aes(ymax = mean.rich + se.rich, ymin = mean.rich-se.rich), width = 0.2) +
+  geom_boxplot() +
+  labs(x = "Collection site", y = "Mean species richness") + 
+  scale_fill_manual(values = col.levels) +
+  theme_classic()+
+  theme(axis.title = element_text(size = 24), axis.text = element_text(size = 20), legend.position = "none")
+richness.plot
+
+ggsave(filename = "../outputs/Fig2A.png", richness.plot, dpi = 1200)
+
+Fig2 <- (richness.plot + diversity.plot) / barplot.abund + plot_annotation(tag_levels = "A") & theme(plot.tag =element_text(size = 26, face = "bold"))
+
+ggsave(Fig2, filename = "../outputs/Fig2.png", dpi = 1200, height = 5, width = 7, units = "in", scale = 2.5)
+
+```
 

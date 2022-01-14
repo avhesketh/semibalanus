@@ -116,6 +116,16 @@ Visual surveys were performed at the time of installation (for intact treatments
 
 <br/>
 
+## Infaunal diversity surveys
+
+The infaunal community found within _S. cariosus_ differed in composition between the sites surveyed (PERMANOVA results). We found a total of X taxa in _S. cariosus_ beds across sites, with an average species richness of Y taxa per 12.7x12.7 cm square area of bed.
+
+- relative diversity of sites (highest vs. lowest) + relative abundance
+
+## Mortality surveys
+
+## Shading experiment
+
 # Figures
 
 <br/>

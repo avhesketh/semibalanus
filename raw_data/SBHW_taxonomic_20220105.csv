@@ -18,7 +18,7 @@ Mytilus trossulus,16,Mytilus trossulus,MYTR,MYTR,Mytilus,trossulus,Animalia,Moll
 Paranemertes peregrina,17,Paranemertes peregrina,PAPE,PAPE,Paranemertes,peregrina,Animalia,Nemertea,Hoplonemertea,Monostilifera,Neesiidae,"Coe, 1901",Nemertea,Nemertea
 Emplectonema gracile,18,Emplectonema gracile,EMGR,EMGR,Emplectonema,gracile,Animalia,Nemertea,Hoplonemertea,Monostilifera,Emplectonematidae,"Johnston, 1837",Nemertea,Nemertea
 Tetrastemma bicolor,19,Quasitetrastemma bicolor,QUBI,QUBI,Quasitetrastemma,bicolor,Animalia,Nemertea,Hoplonemertea,Monostilifera,,"Coe, 1901",Nemertea,Nemertea
-Amphiporus sp.,20,Amphiporus sp.,AMSP,AMSP,Amphiporus,,Animalia,Nemertea,Hoplonemertea,Monostilifera,Amphiporidae,"Ehrenberg, 1831",Nemertea,Nemertea
+Amphiporus sp.,20,Amphiporus sp.,AMPH,AMPH,Amphiporus,,Animalia,Nemertea,Hoplonemertea,Monostilifera,Amphiporidae,"Ehrenberg, 1831",Nemertea,Nemertea
 Munna chromatocephala,21,Munna chromatocephala,MUCH,MUCH,Munna,chromatocephala,Animalia,Arthropoda,Malacostraca,Isopoda,Munnidae,"Menzies, 1952",Isopoda,Isopoda
 Hymenoptera,22,Hymenoptera,HYME,HYME,,,Animalia,Arthropoda,Insecta,Hymenoptera,,,Insecta,Insecta
 Diptera,23,Diptera,DIPT,DIPT,,,Animalia,Arthropoda,Insecta,Diptera,,,Insecta,Insecta
@@ -42,7 +42,7 @@ Katharina tunicata,40,Katharina tunicata,KATU,KATU,Katharina,tunicata,Animalia,M
 Phascoloma agassizii,42,Phascolosoma agassizii,PHAG,PHAG,Phascolosoma,agassizii,Animalia,Sipuncula,Phascolosomatidea,Phascolosomatida,Phascolosomatidae,"Keferstein, 1866",Sipuncula,Sipuncula
 Leptochiton rugatus,43,Leptochiton rugatus,LERU,LERU,Leptochiton,rugatus,Animalia,Mollusca,Polyplacophora,Lepidopleurida,Leptochitonidae,"Carpenter in Pilsbry, 1892",Polyplacophora,Polyplacophora
 Lottia scutum,44,Lottia scutum,LOSC,LOSC,Lottia,scutum,Animalia,Mollusca,Gastropoda,,Lottidae,"Rathke, 1833",Gastropoda,Lottia
-Amiphopoda,45,Amiphopoda,AMPH,AMPH,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda,Amphipoda
+Amiphopoda,45,Amiphopoda,AMSP,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda,Amphipoda
 Balanus glandula,46,Balanus glandula,BAGL,BAGL,Balanus,glandula,Animalia,Arthropoda,Thecostraca,Balanomorpha,Balanidae,"Darwin, 1854",Cirripedia,Cirripedia
 Chthamalus dalli,47,Chthamalus dalli,CHDA,CHDA,Chthamalus,dalli,Animalia,Arthropoda,Thecostraca,Balanomorpha,Chthamalidae,"Pilsbry, 1916",Cirripedia,Cirripedia
 Corallina vancouveriensis,48,Corallina vancouveriensis,COVA,COVA,Corallina,vancouveriensis,Plantae,Rhodophyta,Florideophyceae,Corallinales,Corallinaceae,"Yendo, 1902",Rhodophyta,Coralline
