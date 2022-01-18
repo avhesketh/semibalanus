@@ -7,7 +7,7 @@ output: html_document
 
 ```{r, results = 'hide', echo = F, message = F}
 # load packages
-pkgs <- c("vegan", "vegan3d", "tidyverse", "RColorBrewer", "plotrix", "glmmTMB", "viridis", "patchwork")
+pkgs <- c("vegan", "vegan3d", "tidyverse", "RColorBrewer", "plotrix", "glmmTMB", "viridis", "patchwork", "magick", "ggpubr", "wesanderson")
 lapply(pkgs, library, character = T)
 rm(pkgs)
 
@@ -63,7 +63,7 @@ infauna.clean <- infauna.all %>% replace(is.na(.), 0) %>% separate(file_name, c(
 # bring in color palette from maps script
 
 palette <- site_info %>% select(site_code, full.pal)
-View(infauna.clean)
+
 # filter by time: only collections made at the end of summer 2021 (NOT 1 and 2)
 infauna.summer <- infauna.clean %>% filter(collection_number %in% 3:12) %>% left_join(palette)
 col.levels <- infauna.summer$full.pal %>% unique()
@@ -98,8 +98,8 @@ adonis(infauna.matrix~site_code, data = infauna.summer)
 
 data.scores <- as.data.frame(scores(comm.infauna))
 data.scores$site_code <- infauna.summer$site_code
-data.scores$color <- infauna.summer$full.pal
-data.scores <- data.scores %>% group_by(site_code,color) %>% mutate(mean.x = mean(NMDS1), mean.y = mean(NMDS2)) %>% ungroup() %>% mutate(site_code = factor(site_code, levels = site.levels), color=factor(color, levels = col.levels)) 
+
+data.scores <- data.scores %>% group_by(site_code) %>% mutate(mean.x = mean(NMDS1), mean.y = mean(NMDS2)) %>% ungroup() %>% mutate(site_code = factor(site_code, levels = site.levels))
 
 species.scores <- as.data.frame(scores(comm.infauna, "species"))
 species.scores$species <- rownames(species.scores) 
@@ -134,16 +134,18 @@ site.levels <- as.data.frame(c("WBS","PP","BO","KE","TP","SP","SA","SN","TE","TK
 col.conversion <- site.levels %>% left_join(site_info) %>% select(full.pal)
 col.levels <- col.conversion$full.pal
 site.levels <- site.levels$site_code
+pal <- wes_palette("Darjeeling2", n = 16, type = "continuous")
 
 infauna.clean.coarse <- infauna.all.coarse %>% 
-  separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info) %>% filter(collection_number %in% c(3:12)) %>% select(-collection_date, -collection_number) %>% mutate(site_code = factor(site_code, levels = site.levels))
+  separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info) %>% filter(collection_number %in% c(3:12)) %>% select(-collection_date, -collection_number) %>% mutate(site_code = factor(site_code, levels = site.levels), coarse_grouping = fct_reorder(coarse_grouping, mean.abund, max))
+
 
 barplot.abund <- ggplot(aes(x = site_code, fill = coarse_grouping, y = mean.abund), 
                   data = infauna.clean.coarse) +
-  geom_bar(position = "stack", stat = "identity", col = "grey70", lwd = 0.2, width = 0.8) +
+  geom_bar(position = "stack", stat = "identity", col = "grey50", lwd = 0.2, width = 0.8) +
   theme_classic() +
   labs(y = "Mean abundance", x = "Collection site", fill = "Taxon") +
-  scale_fill_viridis_d(option = "plasma") +
+  scale_fill_discrete(type = pal) +
   theme(axis.title = element_text(size = 24), axis.text = element_text(size = 20),
         legend.title=element_text(size = 24), legend.text = element_text(size = 20))
 barplot.abund
@@ -198,7 +200,12 @@ richness.plot
 
 ggsave(filename = "../outputs/Fig2A.png", richness.plot, dpi = 1200)
 
-Fig2 <- (richness.plot + diversity.plot) / barplot.abund + plot_annotation(tag_levels = "A") & theme(plot.tag =element_text(size = 26, face = "bold"))
+infauna.photo <- image_convert(image_read("../infauna.jpg"), "png")
+
+photo.plot <- ggdraw() + draw_image(infauna.photo) + theme(plot.margin = margin(0,0,0,0))
+
+Fig2 <- (richness.plot | diversity.plot) / (barplot.abund | photo.plot) +
+ plot_annotation(tag_levels = "A") & theme(plot.tag =element_text(size = 26, face = "bold")) 
 
 ggsave(Fig2, filename = "../outputs/Fig2.png", dpi = 1200, height = 5, width = 7, units = "in", scale = 2.5)
 

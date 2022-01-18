@@ -99,7 +99,7 @@ low_tide_hot_hour <- ggplot(aes(x = low_time, y = hottest_hour, col = site), dat
   geom_text(aes(x = 14.5, y = 17.8, label = eqn), col = "black", size = 5) +
   geom_text(aes(x = 16, y = 10.05), label = expression(R^2~"="), col = "black", size = 5) +
   geom_text(aes(x = 20.5, y = 10, label = r2), col = "black", size = 5) +
-  scale_color_manual(values = c("steelblue","mediumorchid3", "tomato3")) +
+  scale_color_manual(values = c("steelblue","#CEAA07","#6E8243")) +
   labs(y = "Hour of maximum on-shore temperature", x = "Hour of lowest low tide")
 low_tide_hot_hour
 

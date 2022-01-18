@@ -152,8 +152,9 @@ Random effects will include:
 
 ```{r, message=F, results="hide"}
 pkgs <- c("tidyverse", "glmmTMB", "DHARMa","lme4","car","ggeffects", "GGally")
-lapply(pkgs, library, character=T)
+invisible(lapply(pkgs, library, character=T))
 rm(pkgs)
+
 ```
 
 ```{r}
@@ -173,7 +174,21 @@ plot(simulateResiduals(mort.mod.1)) # this seems to work.
 mort.mod.2 <- glmmTMB((prop_dead*nrow(mort.model.df)+0.5)/nrow(mort.model.df) ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code/transect), data = mort.model.df, family = beta_family())
 
 plot(simulateResiduals(mort.mod.2)) # the error distribution family seems wrong. Stick with Tweedie!
-?metaMDS
+
+# scale the predictors?
+mort.model.scaled <- mort.model.df %>% mutate(
+  temp.scaled = scale(mean_daily_max_temp_hw),
+  tide.scaled = scale(mean_low_tide_time),
+  algae.scaled = scale(algal_prop_cover),
+  angle.scaled = scale(degrees_from_north),
+  mort.tr = (prop_dead*nrow(mort.model.df)+0.5)/nrow(mort.model.df)
+)
+
+mort.model.3 <- glmmTMB(prop_dead ~ temp.scaled + tide.scaled + algae.scaled + angle.scaled + (1 | site_code/transect), data = mort.model.scaled, family = tweedie)
+
+plot(simulateResiduals(mort.model.3))
+summary(mort.model.3)
+Anova(mort.model.3) # same as previous tweedie model, so no need to change it!
 ```
 
 The residuals look reasonable!
@@ -217,10 +232,10 @@ new.dat <- data.frame(degrees_from_north = mort.model.df$degrees_from_north,
                       site_code = mort.model.df$site_code, transect = mort.model.df$transect)
 new.dat$fit <- predict(mort.mod.1, new.dat %>% na.omit(), type = "response")
 
-mort.plot <- ggplot(data = mort.model.df, aes(col = degrees_from_north, y = prop_dead*100, x = mean_daily_max_temp_hw)) + geom_jitter(size = 2, width = 0.2, alpha = 0.7) + scale_color_gradientn(colors = wes_palette("Zissou1", 20, type = "continuous"), limits = c(0,180)) + theme_classic() + labs(y = "Mortality (%)", col = "Direction relative to north (º)", x = "Mean maximum daily temperature (ºC)") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_smooth(aes(y = fit*100), data= new.dat, method = "lm", se = T, col= "black") + theme(legend.direction = "horizontal", legend.position = "bottom") 
+mort.plot <- ggplot(data = mort.model.df, aes(col = degrees_from_north, y = prop_dead*100, x = mean_daily_max_temp_hw)) + geom_jitter(size = 2, width = 0.2, alpha = 0.8) + scale_color_gradientn(colors = wes_palette("Zissou1", 20, type = "continuous"), limits = c(0,180)) + theme_classic() + labs(y = "Mortality (%)", col = "Aspect (º)", x = "Mean maximum daily temperature (ºC)") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_smooth(aes(y = fit*100), data= new.dat, method = "lm", se = T, col= "black")
 mort.plot
 
-ggsave(filename = "../outputs/Fig3.png", dpi = 1200, mort.plot, height = 3, width = 3.5, units = "in", scale = 1.5)
+ggsave(filename = "../outputs/Fig3.png", dpi = 1200, mort.plot, height = 2.5, width = 3.5, units = "in", scale = 1.5)
 
 ```
 

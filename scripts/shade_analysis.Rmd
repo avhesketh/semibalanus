@@ -14,11 +14,9 @@ I want to examine: 1) How communities differ in mulitdimensional space between t
 # Temperature data
 
 ```{r, message=F, results="hide", warning=FALSE}
-
-library(tidyverse)
-library(lubridate)
-library(car)
-library(vegan)
+pkgs <- c("tidyverse", "lubridate", "car", "vegan", "plotrix", "patchwork")
+lapply(pkgs, library, character.only = T)
+rm(pkgs)
 
 temp.files <- list.files("../raw_data/ibutton_temp/")
 
@@ -54,9 +52,9 @@ temp.clean <- temp.df.clean.aug %>%  full_join(temp.df.clean.july) %>% mutate(tr
 
 temp.rounded <- temp.clean %>% mutate(hour = hour(date_time)) %>% separate(date_time, into = c("date","time"), sep = " ") %>% unite(date_time, c(date, hour), sep = " ") %>% mutate(date_time = ymd_h(date_time)) %>% select(-time) 
 
-tides_cc <- read_delim("../raw_data/tides/tides_all_summer_CC.csv", col_names = c("date","junk","time","tz","tide_height_ft"), delim = " ") %>% mutate(hour = hour(time)) %>% select(-junk, -tz, -time) %>% unite(date_time, c(date, hour), sep = " ") %>% mutate(date_time = ymd_h(date_time), tide_height_m = tide_height_ft * 0.3048) %>% select(-tide_height_ft)
+tides_sa <- read_delim("../raw_data/tides/tides_all_summer_SA.csv", col_names = c("date","junk","time","tz","tide_height_ft"), delim = " ") %>% mutate(hour = hour(time)) %>% select(-junk, -tz, -time) %>% unite(date_time, c(date, hour), sep = " ") %>% mutate(date_time = ymd_h(date_time), tide_height_m = tide_height_ft * 0.3048) %>% select(-tide_height_ft)
 
-temp.lowtide <- temp.rounded %>% left_join(tides_cc) %>% filter(tide_height_m <= 1.4)
+temp.lowtide <- temp.rounded %>% left_join(tides_sa) %>% filter(tide_height_m <= 1.4)
 
 ```
 
@@ -66,11 +64,19 @@ temp.sep <- temp.lowtide %>% separate(date_time, into = c("date","time"), sep = 
 
 temp.hourly <- temp.lowtide %>% group_by(date_time, treatment) %>% summarize(mean_temp = mean(temperature_C)) %>% separate(date_time, into = c("date","time"), sep = " ", remove = F) %>% mutate(date_time = ymd_hms(date_time))
 
-temp.summary <- temp.sep %>% group_by(date, treatment) %>% summarize(mean_temp = mean(temperature_C), max_temp = max(temperature_C)) %>% mutate(date = date(date))
+temp.summary <- temp.sep %>% group_by(date, block, treatment) %>% summarize(max_temp = max(temperature_C)) %>% mutate(date = date(date)) %>% ungroup() %>% group_by(date, treatment) %>% summarize(mean.max.temp = mean(max_temp), se.max.temp = std.error(max_temp))
 
-ggplot(data = temp.summary %>% filter(date >= "2021-06-01" & date < "2021-07-15") , aes(x = date, y = max_temp, col = treatment)) + geom_line() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Mean daily max temperature (ºC)", color = "Treatment") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
+wide.temp.trace <- ggplot(data = temp.summary %>% filter(date >= "2021-05-01" & date < "2021-08-15") , aes(x = date, y = mean.max.temp, col = treatment, fill = treatment)) + geom_line() + theme_bw() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Mean daily max aerial temperature (ºC)", color = "Treatment", fill = "Treatment") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_ribbon(aes(ymax = mean.max.temp + se.max.temp, ymin = mean.max.temp - se.max.temp), alpha = 0.3, color = NA) + annotate("rect", xmin = ymd("2021-06-25"), xmax = ymd("2021-06-29"), ymin = 10, ymax = 45, fill = "black",  col = NA, alpha = 0.3)
 
-View(temp.clean)
+wide.temp.trace
+
+temp.hw <- temp.rounded %>% separate(date_time, c("date", "time"), " ", remove  = F) %>% filter(date >="2021-06-25" & date <= "2021-06-29") %>% group_by(treatment, date_time) %>% summarize(mean.temp = mean(temperature_C), se.temp = std.error(temperature_C))
+
+heat.dome.trace <- ggplot(data = temp.hw, aes(x = date_time, y = mean.temp, col = treatment, fill = treatment)) + geom_line() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Temperature (ºC)", fill = "Treatment", color = "Treatment") + theme_bw() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_ribbon(aes(ymax = mean.temp + se.temp, ymin = mean.temp - se.temp), alpha = 0.3, color = NA) 
+
+temp.traces <- wide.temp.trace / heat.dome.trace + plot_layout(guides = 'collect') + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16, face = "bold"), plot.tag.position = c(-0.03,1), plot.margin = margin(t=5,b=5,l=15,r=5, "pt"))
+
+ggsave(temp.traces, filename = "../outputs/S1Fig3.png", height = 6, width = 7, units = "in", scale = 1.3, dpi = 1200)
 
 ```
 
@@ -78,9 +84,9 @@ The temperature is highest in the unshaded treatments (as expected) by (at times
 
 ```{r}
 
-temp.summary2 <- temp.sep %>% group_by(treatment, date) %>% summarize(mdmax_temp = max(temperature_C)) %>% mutate(trt_long = case_when(treatment == "SI" ~ "shaded intact", treatment == "UI" ~ "unshaded intact", treatment == "SR" ~ "shaded removal", treatment == "UR" ~ "unshaded removal"))
+temp.summary2 <- temp.sep %>% group_by(treatment, date, block) %>% summarize(mdmax_temp = max(temperature_C)) %>% mutate(trt_long = case_when(treatment == "SI" ~ "shaded intact", treatment == "UI" ~ "unshaded intact", treatment == "SR" ~ "shaded removal", treatment == "UR" ~ "unshaded removal")) %>% mutate(shading = substr(treatment,1,1), removal = substr(treatment,2,2))
 
-ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = trt_long)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Mean maximum daily temperature (ºC)", color = "Treatment") + theme_bw()
+fig5a <- ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = treatment, fill = treatment)) + geom_boxplot(alpha = 0.4, outlier.size = NA) + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + labs(x = "Treatment", y = "Mean maximum daily temperature (ºC)", color = "Treatment", fill = "Treatment") + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_jitter(width = 0.2, alpha = 0.2) #+ geom_segment(aes(x = 2.35, xend = 1.5, y = 50, yend = 50), col = "black") + annotate("text", x = 2.5, y = 49.5, label = "***", size = 6) + geom_segment(aes(x = 2.65, xend = 3.5, y = 50, yend = 50), col = "black") + geom_segment(aes(x = 1.5, xend = 1.5, y = 50, yend = 45), col = "black") + geom_segment(aes(x = 3.5, xend = 3.5, y = 50, yend = 45), col = "black") 
 
 ```
 
@@ -96,12 +102,15 @@ summary(temp.model)
 
 Anova(temp.model)
 
-max.temp.model <- lm(mdmax_temp ~ treatment, data = temp.summary2)
+max.temp.model <- lmer(mdmax_temp ~ shading*removal + (1|block), data = temp.summary2)
+plot(simulateResiduals(max.temp.model)) # need to solve homoscedatisicity problems
 
-TukeyHSD(aov(mdmax_temp ~ treatment, data = temp.summary2))
-summary(max.temp.model)
-Anova(max.temp.model)
+max.temp.model.glmm <- glmmTMB(mdmax_temp ~ shading*removal + (1|block), data = temp.summary2, dispformula = ~shading+removal)
+plot(simulateResiduals(max.temp.model.glmm)) # problem solved!
 
+summary(max.temp.model.glmm)
+Anova(max.temp.model.glmm, type = 3)
+?Anova
 ```
 
 
@@ -114,17 +123,12 @@ plot.info <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
 
 mort.complete <- barnacle.mort %>% left_join(plot.info) %>% filter((plot_number %in% c(15,35,36,40)) == F) %>% select(prop_mort, treatment_original_numeric, plot_number, block) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI"))
 
-mort.beds <- mort.complete %>% filter(treatment %in% c("SI","UI"))
+mort.beds <- mort.complete %>% filter(treatment %in% c("SI","UI")) %>% 
+  mutate(mort.tr = (prop_mort*(nrow(mort.complete)-1)+0.5)/nrow(mort.complete))
 
-shade.mort.model <- glm(prop_mort ~ treatment, family = "binomial", data = mort.beds)
+shade.mort.model <- glmmTMB(mort.tr ~ treatment + (1|block), dispformula = ~treatment, family = beta_family(), data = mort.beds)
 
-plot(shade.mort.model)
-
-shade.mort.model.weights <- glm(prop_mort ~ treatment, family = "binomial", weights = treatment, data = mort.beds %>% mutate(treatment = case_when(treatment == "UI" ~ 1, treatment == "SI" ~ 2)))
-
-AIC(shade.mort.model, shade.mort.model.weights)
-
-# no weights
+plot(simulateResiduals(shade.mort.model))
 
 summary(shade.mort.model)
 Anova(shade.mort.model)
@@ -134,7 +138,7 @@ Anova(shade.mort.model)
 ```{r}
 summary(shade.mort.model)
 
-ggplot(mort.beds %>% mutate(treatment = case_when(treatment == "SI" ~ "shaded", treatment == "UI" ~ "unshaded")), aes(x = treatment, y = prop_mort, col = treatment)) + geom_boxplot() + theme_bw() + scale_color_manual( values = c("skyblue4", "tomato4")) + labs(x = "Treatment", y = "Mortality (%)",col = "Treatment") + theme(legend.position = "none")
+fig5b <- ggplot(mort.beds %>% mutate(treatment = case_when(treatment == "SI" ~ "Shaded", treatment == "UI" ~ "Unshaded")), aes(x = treatment, y = prop_mort, col = treatment, fill = treatment)) + geom_boxplot(alpha = 0.4, outlier.size = NA) + theme_classic() + scale_color_manual( values = c("skyblue4", "tomato4")) + scale_fill_manual(values = c("skyblue4", "tomato4")) + labs(x = "Treatment", y = expression("Proportion"~italic("S. cariosus")~"dead"),col = "Treatment") + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none") + geom_jitter(width = 0.2, alpha = 0.3)
 
 ```
 
