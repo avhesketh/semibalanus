@@ -11,14 +11,14 @@ output: html_document
 
 library(tidyverse)
 
-taxa <- read_csv("../raw_data/SBHW_taxonomic_20220105.csv") %>%  select(original_code, final_code)
+taxa <- read_csv("../raw_data/SBHW_taxonomic_20220105.csv") %>%  select(original_code, final_code, kingdom)
 plots <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
 
-viz.1 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_1_20210414.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% select(date, plot_number, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+viz.1 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_1_20210414.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% select(date, block, plot_number, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
 
-viz.2 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_2_20210708.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% select(date, plot_number, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+viz.2 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_2_20210708.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% select(date, block, plot_number, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
 
-viz.3 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_3_202108.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% mutate(date = as.Date("2021-08-21")) %>% select(date, plot_number, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
+viz.3 <- read_csv("../raw_data/shade/SBHW_SHADE_visual_3_202108.csv") %>% pivot_longer(cols = 4:length(.), names_to = "original_code", values_to = "abund") %>% left_join(plots) %>% mutate(date = as.Date("2021-08-21")) %>% select(date, plot_number, block, original_code, abund, treatment_original_numeric) %>% right_join(taxa) %>% na.omit %>% rename(treatment = treatment_original_numeric)
 
 all_visuals <- viz.1 %>% full_join(viz.2) %>% full_join(viz.3) %>% mutate(treatment_code = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR")) %>% select(-original_code)
 
@@ -66,12 +66,12 @@ summary.bncles <- all_visuals %>% group_by(date) %>% summarize(bncle_total = sum
 
 # middle survey has the most recruitment signal
 
-recruitment.peak <- barnacles %>% filter(date == "2021-07-07" | date == "2021-07-08") %>% group_by(plot_number, treatment_code) %>% summarize(total_abund = sum(abund)) %>% mutate(trt_long = case_when(treatment_code == "SR" ~ "shaded removal", treatment_code == "UR" ~ "unshaded removal"))
+recruitment.peak <- barnacles %>% filter(date == "2021-07-07" | date == "2021-07-08") %>% group_by(plot_number, block, treatment_code) %>% summarize(total_abund = sum(abund)) %>% mutate(trt_long = case_when(treatment_code == "SR" ~ "Shaded", treatment_code == "UR" ~ "Unshaded"))
 
-ggplot(recruitment.peak, aes(x = treatment_code, y = total_abund, fill = trt_long, col = trt_long)) + geom_boxplot(alpha = 0.4, outlier.shape = NA) + geom_jitter(width = 0.2, alpha = 0.3) + labs(x = "Treatment", y = "Total barnacle abundance", fill = "Treatment") + theme_classic() + scale_fill_manual(values = c("skyblue3", "tomato2")) + scale_color_manual(values = c("skyblue3", "tomato2")) + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none")
+fig5c <- ggplot(recruitment.peak, aes(x = trt_long, y = total_abund, fill = trt_long, col = trt_long)) + geom_boxplot(alpha = 0.4, outlier.shape = NA) + geom_jitter(width = 0.2, alpha = 0.3) + labs(x = "Treatment", y = "Total barnacle abundance", fill = "Treatment") + theme_classic() + scale_fill_manual(values = c("skyblue3", "tomato2")) + scale_color_manual(values = c("skyblue3", "tomato2")) + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none")
 
-mod.recruit <- glmmTMB(total_abund ~ treatment_code, data = recruitment.peak,
-                       family = nbinom1())
+mod.recruit <- glmmTMB(total_abund ~ treatment_code + (1|block), data = recruitment.peak,
+                       family = nbinom2())
 
 plot(simulateResiduals(mod.recruit))
 summary(mod.recruit)
@@ -79,118 +79,208 @@ Anova(mod.recruit)
 
 ```
 
-## Diversity trajectory??
+## Diversity over time
 
 ```{r}
-
 library(vegan)
 library(lubridate)
 library(lme4)
+library(plotrix)
+library(glmmTMB)
 
-visuals_wide <- all_visuals %>% pivot_wider(names_from = original_code, values_from = abund) 
+# 1: species richness over time, whole community via visual surveys
 
-visuals_factors <- visuals_wide %>% select(1:4)
+visuals.whole <- all_visuals %>% 
+  select(-kingdom, -treatment) %>% 
+  pivot_wider(names_from = final_code, values_from = abund) %>% 
+  replace(is.na(.), 0) 
 
-visuals_matrix <- visuals_wide %>% select(5:length(.)) %>% mutate_all(~replace_na(.,0)) %>% as.matrix
 
-                                                                    
-specnumber(visuals_matrix)
-diversity.viz <- as.data.frame(diversity(visuals_matrix, index = "shannon"))
+richness.whole <- visuals.whole %>% select(5:length(.)) %>% as.matrix %>% specnumber() %>% 
+  cbind(visuals.whole[,1:4]) %>% as.data.frame() %>% rename(richness = 1) %>% mutate(date = as.Date(str_replace_all(date,"2021-07-07","2021-07-08")))
 
-df <- cbind(visuals_factors, diversity.viz) %>% rename(shannon = 5) %>% mutate(date = as.Date(str_replace_all(date,"2021-07-07","2021-07-08")), day =  yday(date))
+richness.summary <- richness.whole %>% group_by(date, treatment_code) %>% summarize(mean.rich = mean(richness), se.rich = std.error(richness)) 
 
-mod.diversity <- lm(shannon ~ day*treatment_code, data = df)
-plot(mod.diversity)
-plot(density(residuals(mod.diversity, type = "deviance")))
-summary(mod.diversity)
+## plot
 
-TukeyHSD(aov(shannon ~ day*treatment_code, data = df))
+ggplot(richness.summary, aes(x = date, y = mean.rich, col = treatment_code)) +
+  geom_point() +
+  geom_errorbar(aes(ymax = mean.rich + se.rich, ymin = mean.rich - se.rich), width = 2) +
+  scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2"))
+  
+## model
 
-mixed.mod.diversity <- lmer(shannon ~ day*treatment + (1|plot_number),data =df)
-plot(mixed.mod.diversity)
-plot(density(residuals(mixed.mod.diversity, type = "deviance")))
+# first, inspect distribution of groups to assess best modeling approach
 
-summary(mixed.mod.diversity)
-Anova(mixed.mod.diversity)
+richness.final <- richness.whole %>% filter(date > "2021-08-01") %>% 
+  separate(treatment_code, c("shading","removal"), 1, remove = F)
 
-AIC(mod.diversity, mixed.mod.diversity)
+ggplot(richness.final, aes(y = richness, fill = treatment_code)) +
+  geom_histogram()+
+  facet_wrap(~treatment_code)
 
-df$pred <- predict(mod.diversity)
+richness.model <- glmmTMB(richness ~ shading*removal + (1|block), data = richness.final,
+                          family = poisson(link = "log"))
+simulationOutput <- simulateResiduals(richness.model)
+plot(simulationOutput)
+testDispersion(simulationOutput) # slight underdispersion. proceed with model
 
-df_summary <- df %>% group_by(day, date, treatment_code) %>% summarize(mean_div = mean(shannon), se_div = sd(shannon)/sqrt(length(shannon))) %>% mutate(trt_long = case_when(treatment_code == "SR" ~ "shaded removal", treatment_code == "UR" ~ "unshaded removal", treatment_code == "SI" ~ "shaded intact", treatment_code == "UI" ~ "unshaded intact" ))
+summary(richness.model)
+Anova(richness.model, type = 3)
 
-ggplot(df_summary, aes(x = date, y = mean_div, col = treatment_code)) + geom_point() + theme_bw() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Shannon diversity", col = "Treatment") + geom_smooth(method = "lm", se = F) + geom_errorbar(aes(ymax = mean_div + se_div, ymin = mean_div - se_div), width = 2)
+# plot of richness @ last timept
 
+fig5d <- ggplot(richness.whole, aes(x = treatment_code, y = richness, fill = treatment_code, col = treatment_code)) + geom_boxplot(alpha = 0.4, outlier.color = NA) + geom_jitter(alpha = 0.3, width = 0.2) + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2"))+ theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none") + labs(x = "Treatment", y = "Species richness")
 
 ```
+
+# plots continued
+
+```{r}
+
+visuals_inverts <- all_visuals %>% 
+  filter(kingdom == "Animalia") %>% 
+  select(-kingdom, -plot_number, -treatment) %>% 
+  pivot_wider(names_from = final_code, values_from = abund) %>% 
+  replace(is.na(.), 0) 
+
+visuals_factors <- visuals_inverts %>% select(1:3)
+
+visuals_species <- visuals_inverts %>% select(4:length(.)) %>% as.matrix 
+
+H.inverts <- diversity(visuals_species, index = "shannon")
+
+shannon.inverts <- as.data.frame(cbind(visuals_factors, H.inverts)) %>% rename(shannon = 4) %>% filter(date > "2021-08-01") %>% # just take last day
+separate(treatment_code, c("shading","removal"),1, remove = F)
+  
+ggplot(aes(y = shannon), data = shannon.inverts) +
+  geom_histogram()+ facet_wrap(~treatment_code)
+
+diversity.inverts.lmer <- glmmTMB(shannon ~ shading*removal + (1|block), data = shannon.inverts)
+
+AIC(diversity.inverts.lmer, diversity.inverts.lmer.1)
+plot(simulateResiduals(diversity.inverts.lmer))
+summary(diversity.inverts.lmer)
+Anova(diversity.inverts.lmer, type = 3)
+
+fig5e <- ggplot(shannon.inverts, aes(x = treatment_code, y = shannon, fill = treatment_code, col = treatment_code)) + geom_boxplot(alpha = 0.4, outlier.color = NA) + geom_jitter(alpha = 0.3, width = 0.2) + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2"))+ theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none") + labs(x = "Treatment", y = "Shannon diversity (invertebrates)")
+
+## and now repeat for algae
+
+visuals_algae <- all_visuals %>% 
+  filter(kingdom != "Animalia") %>% 
+  select(-kingdom, -plot_number, -treatment) %>% 
+  pivot_wider(names_from = final_code, values_from = abund) %>% 
+  replace(is.na(.), 0) 
+
+visuals_factors <- visuals_algae %>% select(1:3)
+
+visuals_species <- visuals_algae %>% select(4:length(.)) %>% as.matrix 
+
+H.algae <- diversity(visuals_species, index = "shannon")
+
+shannon.algae <- as.data.frame(cbind(visuals_factors, H.algae)) %>% rename(shannon = 4) %>% filter(date > "2021-08-01") %>% # just take last day
+separate(treatment_code, c("shading","removal"),1, remove = F)
+  
+ggplot(aes(y = shannon), data = shannon.algae) +
+  geom_histogram()+ facet_wrap(~treatment_code) # a LOT of zeroes in these data
+
+diversity.algae.lmer <- glmmTMB(shannon ~ shading*removal + (1|block), family = tweedie(link = "log"), data = shannon.algae)
+plot(simulateResiduals(diversity.algae.lmer))
+summary(diversity.algae.lmer)
+Anova(diversity.algae.lmer, type = 3)
+
+fig5f <- ggplot(shannon.algae, aes(x = treatment_code, y = shannon, fill = treatment_code, col = treatment_code)) + geom_boxplot(alpha = 0.4, outlier.color = NA) + geom_jitter(alpha = 0.3, width = 0.2) + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2"))+ theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none") + labs(x = "Treatment", y = "Shannon diversity (algae)")
+
+library(patchwork)
+
+# assemble figure
+fig5 <- (fig5a + fig5b + fig5c) / (fig5d + fig5e + fig5f) + plot_layout(guides = "collect")
+ggsave(fig5, filename = "../outputs/Fig5.png", dpi = 1200, width = 7, height = 5, units = "in", scale = 1.5)
+
+```
+
 
 ## Infauna matrix
 
 ```{r}
-library(ecotraj)
-library(vegan)
 
-infauna_matrix <- infauna_all %>% select(-site_code, -collection_number, -collection_date) %>% as.matrix
-
-infauna_factors <- infauna_all %>% select(site_code, collection_date) %>% unite(site_date, c(site_code, collection_date), sep = "_")
-
-cta_bray <- metaMDS(infauna_matrix, distance = "bray", k = 2, try = 999, autotransform = T)
+set.seed(4947)
 
 ```
 
-## Community differences
 
-```{r echo=F, fig.align='center', fig.keep = "last", fig.show = "asis", message=FALSE, results=F, fig.dim = c(9,7)}
-
-
-
-cta_ord <- ordiplot(cta_bray, type = "none", xlim=c(-1,1),ylim = c(-1.5,1.5))
-points(cta_ord, what = "sites", col = "black")
-orditorp(cta_ord,display="species",col="grey30", cex = 0.8, air=1)
-ordiellipse(cta_ord, groups = infauna_factors$site_date, 
-            col = c("blue", "red"), label = TRUE)
-
-# not super interesting rn
-```
-
-
-## Infauna at CC site only
+## Infauna at Sahsima only
 
 ```{r}
 plot.info <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
 
-infauna_cc <- read_csv("../raw_data/shade/SBHW_SHADE_infauna.csv") %>% rename(plot_number = plot_id) %>%  left_join(plot.info) %>% select(-plot_number, -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric)
+infauna_sa <- read_csv("../raw_data/shade/SBHW_SHADE_infauna.csv") %>% rename(plot_number = plot_id) %>%  left_join(plot.info) %>% select(-plot_number, -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric)
 
-infauna_factors <- infauna_cc %>% select(treatment, block)
-infauna_matrix <- infauna_cc %>% select(-treatment, -block) %>% as.matrix()
+infauna_factors <- infauna_sa %>% select(treatment, block)
+infauna_matrix <- infauna_sa %>% select(-treatment, -block) %>% as.matrix()
 
 infauna_bray <- metaMDS(infauna_matrix, k=2, try = 999, autotransform = T)
+infauna_bray$stress
 ```
 
 
 ```{r}
-infauna_ord <- ordiplot(infauna_bray, type = "none")
-points(infauna_ord, what = "sites", col = "black")
-orditorp(infauna_ord,display="species",col="grey30", cex = 0.8, air=1)
-ordiellipse(infauna_ord, groups = infauna_factors$treatment, 
-            col = c("tomato4","skyblue4"), lwd = 1.5)
-legend("right", col = c("skyblue4","tomato4"), legend = c("shaded","unshaded"), 
-       bty = "n", lty = 1, lwd = 2)
 
-perm.inf.cc <- adonis(infauna_matrix ~ treatment, data = infauna_factors)
+## ggplot of first two NMDS axes
 
-perm.inf.cc
+data.scores <- as.data.frame(scores(infauna_bray))
+data.scores$treatment <- infauna_factors$treatment
 
-dist.inf.cc <- vegdist(infauna_matrix, method = "bray")
+data.scores <- data.scores %>% group_by(treatment) %>% mutate(mean.x = mean(NMDS1), mean.y = mean(NMDS2)) %>% ungroup() %>% mutate(treatment = case_when(treatment == "1" ~ "Unshaded",treatment == "2" ~ "Shaded"))
 
-disp.inf.cc <- betadisper(dist.inf.cc, type = "centroid", group = infauna_factors$treatment)
+species.scores <- as.data.frame(scores(infauna_bray, "species"))
+species.scores$species <- rownames(species.scores) 
 
-anova(disp.inf.cc)
-boxplot(disp.inf.cc)
+## adding ellipses to plot
+
+veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+  {
+    theta <- (0:npoints) * 2 * pi/npoints
+    Circle <- cbind(cos(theta), sin(theta))
+    t(center + scale * t(Circle %*% chol(cov)))
+  }
+
+  df_ell <- data.frame()
+  for(g in levels(as.factor(data.scores$treatment))){
+    df_ell <- rbind(df_ell, cbind(as.data.frame(with(data.scores[data.scores$treatment==g,],
+                    veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2)))))
+                    ,group=g))
+  }
+
+df_ell$treatment <- df_ell$group
+
+library(ggrepel)
+## create ggplot ordination
+infauna.ordination.sa <- ggplot() + 
+  geom_path(data=df_ell,aes(x = NMDS1,y =NMDS2,colour=treatment)) +
+  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=treatment),size=3, alpha = 0.8) + # add the point markers
+  geom_text_repel(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size = 3, alpha=0.7,
+                  max.overlaps = 500, box.padding=0.05, min.segment.length = 1) +
+  coord_equal() +
+  theme_bw() +
+  scale_color_manual(values = c("skyblue4","tomato4")) +
+  #geom_text(aes(x = 0.9, y = 0.6, label = paste("Stress = ", round(comm.infauna$stress,4))),cex = 4) +
+  labs(color = "Treatment", x = "Axis 1", y = "Axis 2") +
+  theme(axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12))
+infauna.ordination.sa
+
+ggsave(filename = "../outputs/Fig6.png", infauna.ordination.sa, dpi = 1200,
+       width = 3.5, height = 2.5, units = "in", scale = 1.5)
+
+adonis(infauna_matrix ~ treatment, infauna_factors)
+
+dist <- vegdist(infauna_matrix, "bray")
+
+infauna.beta <- betadisper(dist, infauna_factors$treatment)
+anova(infauna.beta)
 
 ```
-
-
-
-
-

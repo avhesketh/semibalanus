@@ -77,7 +77,7 @@ infauna.matrix <- infauna.summer %>% ungroup() %>%
 infauna.matrix <- as.matrix(infauna.matrix)
 
 # ready to analyze
-comm.infauna <- metaMDS(infauna.matrix, k = 3, try = 999, autotransform = T)
+comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 999, autotransform = T)
 stressplot(comm.infauna) # plot stress
 comm.infauna$stress # print stress of final model (ok with 2 dimensions, but not excellent)
 # if you try replotting with 3 dimensions, stress is <0.2, so better to have all 3
@@ -178,7 +178,7 @@ diversity.plot <- ggplot(aes(x = site_code, y = H, fill = site_code), data = inf
   #geom_bar(stat = "identity", position = "dodge", width = 0.8) +
   #geom_errorbar(aes(ymax = mean.H + se.H, ymin = mean.H-se.H), width = 0.2) +
   geom_boxplot() +
-  labs(x = "Collection site", y = "Mean Shannon diversity") + 
+  labs(x = "Collection site", y = "Shannon diversity") + 
   scale_fill_manual(values = col.levels) +
   theme_classic()+
   theme(axis.title = element_text(size = 24), axis.text = element_text(size = 20), legend.position = "none")
@@ -192,7 +192,7 @@ richness.plot <- ggplot(aes(x = site_code, y = richness, fill = site_code), data
   #geom_bar(stat = "identity", position = "dodge", width = 0.8) +
   #geom_errorbar(aes(ymax = mean.rich + se.rich, ymin = mean.rich-se.rich), width = 0.2) +
   geom_boxplot() +
-  labs(x = "Collection site", y = "Mean species richness") + 
+  labs(x = "Collection site", y = "Species richness") + 
   scale_fill_manual(values = col.levels) +
   theme_classic()+
   theme(axis.title = element_text(size = 24), axis.text = element_text(size = 20), legend.position = "none")
