@@ -32,6 +32,38 @@ We hypothesize that:
 
 We will attempt to model mortality using a generalized linear modeling approach with a beta family (given that proportion data are being used). We may need to transform the data in order to pull zero mortality data above zero, since GLMMTMB can only handle data on the interval (0,1), not [0,1].
 
+
+```{r}
+# make figure to show magnitude of heat wave
+# missing data: impute tofino data by day & time using other sites (Esquimalt & Bella Bella)
+
+tbl <- list.files("../raw_data/hourly_temps_figure/impute/", full.names = T) %>% map_df(~read_csv(., col_select = c(3, 5:8, 10))) %>% rename(site = 1, date_time = 2, temp = 6) %>% mutate(date_time = ymd_hms(date_time)) %>% mutate(time = hour(date_time), Day = as.numeric(Day), Month = as.numeric(Month)) %>% filter(date_time <= ymd_hms("2021-07-01 23:00:00") & date_time >= ymd_hms("2021-06-23 00:00:00"))
+
+X <- na_ma(tbl,k=10, weighting = "linear")
+plot(temp ~ date_time, data = X %>% filter(site == "TOFINO A"))
+hourly.temp.impute <- mice(tbl %>% select(temp, Month, Day, time, site), m = 5, maxit = 500, method = "pmm", seed = 500)
+
+hourly.temp.tofino <- complete(hourly.temp.impute %>% filter(site == "TOFINO A")) %>% mutate(date_time = ymd_h(paste(paste(paste("2021",Month,sep = "-"), Day, sep = "-"), time, sep = " ")))
+
+# plot against seasonal norms
+
+bamfield.panel <- ggplot(data = tbl %>% filter(site == "TOFINO A"), aes(x = date_time)) + geom_line(aes(y = temp), col = "olivedrab4", lwd = 1) + annotate(geom = "rect", xmin = ymd_hms("2021-06-23 00:00:00"), xmax = ymd_hms("2021-06-30 23:00:00"), ymin = 8.9, ymax = 16.8, alpha = 0.3) + geom_line(aes(y = 12.9), lty = "dotted") + labs(x = "Date", y = "Temperature (ºC)") + coord_cartesian(xlim = c(ymd_hms("2021-06-23 00:00:00"), ymd_hms("2021-06-30 23:00:00")), expand = F, ylim = c(5,40)) + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12))
+bamfield.panel # still odd. imputation is making temp high at 10 PM, which isn't accurate
+# just go without.
+
+
+hourly.temp.vic <- read_csv("../raw_data/hourly_temps_figure/hourly_temp_vicairport.csv", col_select = c(5:8, 10, 14)) %>% filter(Day <= 30 & Day >=23) %>% rename(date_time = 1, temp = 5, humidity = 6) %>% mutate(date_time = ymd_hms(date_time)) %>% View()
+
+yyj.panel <- ggplot(data = hourly.temp.vic, aes(x = date_time)) + geom_line(aes(y = temp), col = "mediumorchid4", lwd = 1) + annotate(geom = "rect", xmin = ymd_hms("2021-06-23 00:00:00"), xmax = ymd_hms("2021-06-30 23:00:00"), ymin = 9.8, ymax = 19.9, alpha = 0.3) + geom_line(aes(y = 14.9), lty = "dotted") + labs(x = "Date", y = "Temperature (ºC)") + coord_cartesian(xlim = c(ymd_hms("2021-06-23 00:00:00"), ymd_hms("2021-06-30 23:00:00")), expand = F, ylim = c(5,40)) + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12))
+yyj.panel
+
+S1Fig1 <- bamfield.panel / yyj.panel + plot_annotation(tag_levels = "A")
+S1Fig1
+ggsave(S1Fig1, filename = "../outputs/S1Fig1.png", dpi = 1200, width = 7, height = 5, units = "in" )
+```
+
+
+
 ## Assembling temperature data
 
 ```{r, results='hide', message = F}
@@ -83,8 +115,11 @@ temp.summary <- required.temp.data %>%
 
 temp.hw.only <- temp.df.rename %>% filter(date <= "2021-06-29" & date >= "2021-06-25")
 
+imputed.tofino.hw <- hourly.temp.tofino %>% select(-Day, -Month,-time) %>% separate(date_time, into = c("date","time"), sep = " ", remove = F) %>% mutate(site_code = "PP") %>% filter(date <= "2021-06-29" & date >= "2021-06-25")
+
+imputed.tofino.mdmean <- imputed.tofino.hw %>% group_by(site_code, date) %>% summarize(max_temp = max(temp)) %>% ungroup() %>% group_by(site_code) %>% summarize(mean_daily_max_temp_hw = mean(max_temp))                                                 
 temp.hw.summary <- temp.hw.only %>% 
-  group_by(site_code) %>% summarize(mean_daily_temp_hw = mean(mean_temp_C, na.rm=T), mean_daily_max_temp_hw = mean(max_temp_C, na.rm=T)) %>% mutate(site_code = if_else(site_code == "BS", "WBS", site_code))
+  group_by(site_code) %>% summarize(mean_daily_temp_hw = mean(mean_temp_C, na.rm=T), mean_daily_max_temp_hw = mean(max_temp_C, na.rm=T)) %>% mutate(site_code = if_else(site_code == "BS", "WBS", site_code)) #%>% filter(site_code != "PP") %>% full_join(imputed.tofino.mdmean)
 
 # join to site information data frame
 
@@ -107,7 +142,7 @@ tides_full <- rbind(rbind(tides_cp, tides_tp),tides_rest)
 
 #write_csv(tides_full, "../clean_data/SBHW_tides_clean.csv")
 
-tides_summary <- tides_full %>% group_by(site_code, date) %>% mutate(low_water = min(tide_height_m)) %>% ungroup() %>% filter(tide_height_m == low_water) %>% group_by(site_code) %>% summarize(mean_low_tide_time = mean(hour))
+tides_summary <- read_csv("../clean_data/SBHW_tides_clean.csv") %>% group_by(site_code, date) %>% mutate(low_water = min(tide_height_m)) %>% ungroup() %>% filter(tide_height_m == low_water) %>% group_by(site_code) %>% summarize(mean_low_tide_time = mean(hour))
 
 with.tides <- explanatory.variables %>% left_join(tides_summary)
 
@@ -175,20 +210,6 @@ mort.mod.2 <- glmmTMB((prop_dead*nrow(mort.model.df)+0.5)/nrow(mort.model.df) ~ 
 
 plot(simulateResiduals(mort.mod.2)) # the error distribution family seems wrong. Stick with Tweedie!
 
-# scale the predictors?
-mort.model.scaled <- mort.model.df %>% mutate(
-  temp.scaled = scale(mean_daily_max_temp_hw),
-  tide.scaled = scale(mean_low_tide_time),
-  algae.scaled = scale(algal_prop_cover),
-  angle.scaled = scale(degrees_from_north),
-  mort.tr = (prop_dead*nrow(mort.model.df)+0.5)/nrow(mort.model.df)
-)
-
-mort.model.3 <- glmmTMB(prop_dead ~ temp.scaled + tide.scaled + algae.scaled + angle.scaled + (1 | site_code/transect), data = mort.model.scaled, family = tweedie)
-
-plot(simulateResiduals(mort.model.3))
-summary(mort.model.3)
-Anova(mort.model.3) # same as previous tweedie model, so no need to change it!
 ```
 
 The residuals look reasonable!

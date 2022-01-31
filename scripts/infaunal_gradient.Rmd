@@ -8,7 +8,7 @@ output: html_document
 ```{r, results = 'hide', echo = F, message = F}
 # load packages
 pkgs <- c("vegan", "vegan3d", "tidyverse", "RColorBrewer", "plotrix", "glmmTMB", "viridis", "patchwork", "magick", "ggpubr", "wesanderson")
-lapply(pkgs, library, character = T)
+invisible(lapply(pkgs, library, character = T))
 rm(pkgs)
 
 # load relevant data: collection info (associates number of collection with site code and collection date)
@@ -187,7 +187,7 @@ diversity.plot
 ggsave(filename = "../outputs/Fig2B.png", diversity.plot, dpi = 1200)
 
 # final panel: species richness, color coded by site
-
+View(infauna.diversity$richness)
 richness.plot <- ggplot(aes(x = site_code, y = richness, fill = site_code), data = infauna.diversity) +
   #geom_bar(stat = "identity", position = "dodge", width = 0.8) +
   #geom_errorbar(aes(ymax = mean.rich + se.rich, ymin = mean.rich-se.rich), width = 0.2) +

@@ -50,7 +50,7 @@ temp.clean <- temp.df.clean.aug %>%  full_join(temp.df.clean.july) %>% mutate(tr
 
 # isolate low tide data only
 
-temp.rounded <- temp.clean %>% mutate(hour = hour(date_time)) %>% separate(date_time, into = c("date","time"), sep = " ") %>% unite(date_time, c(date, hour), sep = " ") %>% mutate(date_time = ymd_h(date_time)) %>% select(-time) 
+temp.rounded <- read_csv("../clean_data/SBHW_temp_clean.csv") %>% mutate(hour = hour(date_time)) %>% separate(date_time, into = c("date","time"), sep = " ") %>% unite(date_time, c(date, hour), sep = " ") %>% mutate(date_time = ymd_h(date_time)) %>% select(-time) 
 
 tides_sa <- read_delim("../raw_data/tides/tides_all_summer_SA.csv", col_names = c("date","junk","time","tz","tide_height_ft"), delim = " ") %>% mutate(hour = hour(time)) %>% select(-junk, -tz, -time) %>% unite(date_time, c(date, hour), sep = " ") %>% mutate(date_time = ymd_h(date_time), tide_height_m = tide_height_ft * 0.3048) %>% select(-tide_height_ft)
 
@@ -66,13 +66,13 @@ temp.hourly <- temp.lowtide %>% group_by(date_time, treatment) %>% summarize(mea
 
 temp.summary <- temp.sep %>% group_by(date, block, treatment) %>% summarize(max_temp = max(temperature_C)) %>% mutate(date = date(date)) %>% ungroup() %>% group_by(date, treatment) %>% summarize(mean.max.temp = mean(max_temp), se.max.temp = std.error(max_temp))
 
-wide.temp.trace <- ggplot(data = temp.summary %>% filter(date >= "2021-05-01" & date < "2021-08-15") , aes(x = date, y = mean.max.temp, col = treatment, fill = treatment)) + geom_line() + theme_bw() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Mean daily max aerial temperature (ºC)", color = "Treatment", fill = "Treatment") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_ribbon(aes(ymax = mean.max.temp + se.max.temp, ymin = mean.max.temp - se.max.temp), alpha = 0.3, color = NA) + annotate("rect", xmin = ymd("2021-06-25"), xmax = ymd("2021-06-29"), ymin = 10, ymax = 45, fill = "black",  col = NA, alpha = 0.3)
+fig5a <- ggplot(data = temp.summary %>% filter(date >= "2021-05-01" & date < "2021-08-15") , aes(x = date, y = mean.max.temp, col = treatment, fill = treatment)) + geom_line() + theme_bw() + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + labs(x = "Date", y = "Daily maximum temperature (ºC)", color = "Treatment", fill = "Treatment") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + annotate("rect", xmin = ymd("2021-06-25"), xmax = ymd("2021-06-29"), ymin = 10, ymax = 45, fill = "black",  col = NA, alpha = 0.3) #+ geom_ribbon(aes(ymax = mean.max.temp + se.max.temp, ymin = mean.max.temp - se.max.temp), alpha = 0.3, color = NA) 
 
 wide.temp.trace
 
 temp.hw <- temp.rounded %>% separate(date_time, c("date", "time"), " ", remove  = F) %>% filter(date >="2021-06-25" & date <= "2021-06-29") %>% group_by(treatment, date_time) %>% summarize(mean.temp = mean(temperature_C), se.temp = std.error(temperature_C))
 
-heat.dome.trace <- ggplot(data = temp.hw, aes(x = date_time, y = mean.temp, col = treatment, fill = treatment)) + geom_line() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) + labs(x = "Date", y = "Temperature (ºC)", fill = "Treatment", color = "Treatment") + theme_bw() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_ribbon(aes(ymax = mean.temp + se.temp, ymin = mean.temp - se.temp), alpha = 0.3, color = NA) 
+fig5b <- ggplot(data = temp.hw, aes(x = date_time, y = mean.temp, col = treatment, fill = treatment)) + geom_line() + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + labs(x = "Date", y = "Temperature (ºC)", fill = "Treatment", color = "Treatment") + theme_bw() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) #+ geom_ribbon(aes(ymax = mean.temp + se.temp, ymin = mean.temp - se.temp), alpha = 0.3, color = NA) 
 
 temp.traces <- wide.temp.trace / heat.dome.trace + plot_layout(guides = 'collect') + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16, face = "bold"), plot.tag.position = c(-0.03,1), plot.margin = margin(t=5,b=5,l=15,r=5, "pt"))
 
@@ -86,7 +86,9 @@ The temperature is highest in the unshaded treatments (as expected) by (at times
 
 temp.summary2 <- temp.sep %>% group_by(treatment, date, block) %>% summarize(mdmax_temp = max(temperature_C)) %>% mutate(trt_long = case_when(treatment == "SI" ~ "shaded intact", treatment == "UI" ~ "unshaded intact", treatment == "SR" ~ "shaded removal", treatment == "UR" ~ "unshaded removal")) %>% mutate(shading = substr(treatment,1,1), removal = substr(treatment,2,2))
 
-fig5a <- ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = treatment, fill = treatment)) + geom_boxplot(alpha = 0.4, outlier.color = NA) + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + labs(x = "Treatment", y = "Mean maximum daily temperature (ºC)", color = "Treatment", fill = "Treatment") + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_jitter(width = 0.2, alpha = 0.2) #+ geom_segment(aes(x = 2.35, xend = 1.5, y = 50, yend = 50), col = "black") + annotate("text", x = 2.5, y = 49.5, label = "***", size = 6) + geom_segment(aes(x = 2.65, xend = 3.5, y = 50, yend = 50), col = "black") + geom_segment(aes(x = 1.5, xend = 1.5, y = 50, yend = 45), col = "black") + geom_segment(aes(x = 3.5, xend = 3.5, y = 50, yend = 45), col = "black") 
+S1F4 <- ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = treatment, fill = treatment)) + geom_boxplot(alpha = 0.4, outlier.color = NA) + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + labs(x = "Treatment", y = "Daily maximum temperature (ºC)", color = "Treatment", fill = "Treatment") + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_jitter(width = 0.2, alpha = 0.2) #+ geom_segment(aes(x = 2.35, xend = 1.5, y = 50, yend = 50), col = "black") + annotate("text", x = 2.5, y = 49.5, label = "***", size = 6) + geom_segment(aes(x = 2.65, xend = 3.5, y = 50, yend = 50), col = "black") + geom_segment(aes(x = 1.5, xend = 1.5, y = 50, yend = 45), col = "black") + geom_segment(aes(x = 3.5, xend = 3.5, y = 50, yend = 45), col = "black") 
+
+
 
 ```
 
@@ -110,7 +112,7 @@ plot(simulateResiduals(max.temp.model.glmm)) # problem solved!
 
 summary(max.temp.model.glmm)
 Anova(max.temp.model.glmm, type = 3)
-?Anova
+
 ```
 
 
@@ -138,7 +140,7 @@ Anova(shade.mort.model)
 ```{r}
 summary(shade.mort.model)
 
-fig5b <- ggplot(mort.beds %>% mutate(treatment = case_when(treatment == "SI" ~ "Shaded", treatment == "UI" ~ "Unshaded")), aes(x = treatment, y = prop_mort, col = treatment, fill = treatment)) + geom_boxplot(alpha = 0.4, outlier.size = NA) + theme_classic() + scale_color_manual( values = c("skyblue4", "tomato4")) + scale_fill_manual(values = c("skyblue4", "tomato4")) + labs(x = "Treatment", y = expression("Proportion"~italic("S. cariosus")~"dead"),col = "Treatment") + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none") + geom_jitter(width = 0.2, alpha = 0.3)
+fig5c <- ggplot(mort.beds, aes(x = treatment, y = prop_mort, col = treatment, fill = treatment)) + geom_boxplot(alpha = 0.4, outlier.size = NA) + theme_classic() + scale_color_manual( values = c("skyblue4", "tomato4")) + scale_fill_manual(values = c("skyblue4", "tomato4")) + labs(x = "Treatment", y = expression("Proportion"~italic("S. cariosus")~"dead"),col = "Treatment") + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.position = "none") + geom_jitter(width = 0.2, alpha = 0.3)
 
 ```
 
