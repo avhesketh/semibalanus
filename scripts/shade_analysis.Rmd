@@ -68,15 +68,9 @@ temp.summary <- temp.sep %>% group_by(date, block, treatment) %>% summarize(max_
 
 fig5a <- ggplot(data = temp.summary %>% filter(date >= "2021-05-01" & date < "2021-08-15") , aes(x = date, y = mean.max.temp, col = treatment, fill = treatment)) + geom_line() + theme_bw() + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + labs(x = "Date", y = "Daily maximum temperature (ºC)", color = "Treatment", fill = "Treatment") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + annotate("rect", xmin = ymd("2021-06-25"), xmax = ymd("2021-06-29"), ymin = 10, ymax = 45, fill = "black",  col = NA, alpha = 0.3) #+ geom_ribbon(aes(ymax = mean.max.temp + se.max.temp, ymin = mean.max.temp - se.max.temp), alpha = 0.3, color = NA) 
 
-wide.temp.trace
-
 temp.hw <- temp.rounded %>% separate(date_time, c("date", "time"), " ", remove  = F) %>% filter(date >="2021-06-25" & date <= "2021-06-29") %>% group_by(treatment, date_time) %>% summarize(mean.temp = mean(temperature_C), se.temp = std.error(temperature_C))
 
 fig5b <- ggplot(data = temp.hw, aes(x = date_time, y = mean.temp, col = treatment, fill = treatment)) + geom_line() + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + labs(x = "Date", y = "Temperature (ºC)", fill = "Treatment", color = "Treatment") + theme_bw() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) #+ geom_ribbon(aes(ymax = mean.temp + se.temp, ymin = mean.temp - se.temp), alpha = 0.3, color = NA) 
-
-temp.traces <- wide.temp.trace / heat.dome.trace + plot_layout(guides = 'collect') + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 16, face = "bold"), plot.tag.position = c(-0.03,1), plot.margin = margin(t=5,b=5,l=15,r=5, "pt"))
-
-ggsave(temp.traces, filename = "../outputs/S1Fig3.png", height = 6, width = 7, units = "in", scale = 1.3, dpi = 1200)
 
 ```
 
@@ -88,7 +82,7 @@ temp.summary2 <- temp.sep %>% group_by(treatment, date, block) %>% summarize(mdm
 
 S1F4 <- ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), aes(x = treatment, y = mdmax_temp, col = treatment, fill = treatment)) + geom_boxplot(alpha = 0.4, outlier.color = NA) + scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + labs(x = "Treatment", y = "Daily maximum temperature (ºC)", color = "Treatment", fill = "Treatment") + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_jitter(width = 0.2, alpha = 0.2) #+ geom_segment(aes(x = 2.35, xend = 1.5, y = 50, yend = 50), col = "black") + annotate("text", x = 2.5, y = 49.5, label = "***", size = 6) + geom_segment(aes(x = 2.65, xend = 3.5, y = 50, yend = 50), col = "black") + geom_segment(aes(x = 1.5, xend = 1.5, y = 50, yend = 45), col = "black") + geom_segment(aes(x = 3.5, xend = 3.5, y = 50, yend = 45), col = "black") 
 
-
+ggsave(S1F4, filename = "../outputs/S1Fig5.png", dpi = 1200, width = 7, height = 5, units = "in")
 
 ```
 
@@ -145,161 +139,4 @@ fig5c <- ggplot(mort.beds, aes(x = treatment, y = prop_mort, col = treatment, fi
 ```
 
 Clearly, having a shade positively affected barnacle survival. What about species richness/diversity based on visual surveys??
-
-```{r,message = F, results = "hide"}
-
-visuals <- read_csv("../raw_data/shade/SBHW_SHADE_visual_3_202108.csv")
-
-# separate the cover and count data
-
-taxa <- read_csv("../raw_data/SBC_taxonomic_20211026.csv") %>% select(taxon_code, kingdom)
-
-algae <- taxa %>% filter(kingdom != "Animalia") %>% select(-kingdom)
-animal <- taxa %>% filter(kingdom == "Animalia") %>% select(-kingdom)
-
-# algal diversity & abund
-
-visuals.long <- visuals %>% pivot_longer(cols = c(2:length(visuals)), names_to = "taxon_code", values_to = "abund")
-
-visuals.algae <- visuals.long %>% right_join(algae) %>% pivot_wider(names_from = "taxon_code", values_from = "abund") %>% select(-ULSP) %>% na.omit()
-
-H <- diversity(visuals.algae)
-total_cover <- rowSums(visuals.algae %>% select(-plot_number))
-
-diversity.algae <- cbind(visuals.algae$plot_number, H, total_cover)
-colnames(diversity.algae) <- c("plot_number","H", "total_cover")
-diversity.algae <- as.data.frame(diversity.algae)
-
-diversity.algae.trts <- diversity.algae %>% full_join(plot.info) %>% select(-plot_number, -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
-
-# animal diversity & abund
-
-visuals.animals <- visuals.long %>% right_join(animal)  %>% pivot_wider(names_from = "taxon_code", values_from = "abund") %>% mutate_all(~replace_na(.,0)) %>% select(-c(GNOR:NEVE)) %>% na.omit()
-
-H <- diversity(visuals.animals)
-abund <- rowSums(visuals.animals %>% select(-plot_number))
-
-diversity.animals <- cbind(visuals.animals$plot_number, H, abund)
-colnames(diversity.animals) <- c("plot_number","H", "abund")
-diversity.animals <- as.data.frame(diversity.animals)
-
-diversity.animals.trts <- diversity.animals %>% full_join(plot.info) %>% select(-plot_number, -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
-
-richness.all.taxa <- cbind(visuals$plot_number, specnumber(visuals))
-colnames(richness.all.taxa) <- c("plot_number", "richness")
-richness.all.taxa <- as.data.frame(richness.all.taxa)
-
-richness.all.trts <- richness.all.taxa %>% full_join(plot.info) %>% select(-plot_number, -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric) %>% mutate(treatment = case_when(treatment == 1 ~ "UI", treatment == 2 ~ "SI", treatment == 3 ~ "UR", treatment == 4 ~ "SR"))
-
-```
-
-# Plots of diversity & abundance
-
-## 1: Species richness, all taxa
-
-```{r}
-ggplot(richness.all.trts, aes(x=treatment, y = richness, color = treatment)) + geom_boxplot() + labs(y = "Species richness", x = "Treatment") + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
-```
-
-## 2: Animals only: Shannon diversity & total abundance
-
-```{r}
-ggplot(diversity.animals.trts, aes(x=treatment, y = H, color = treatment)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
-```
-
-```{r}
-ggplot(diversity.animals.trts, aes(x=treatment, y = abund, color = treatment)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
-```
-
-This trend is driven by barnacle recruitment, which was REALLY high in shaded removal plots. Might be worth digging into further??
-
-```{r}
-
-richness <- lm(richness ~ treatment, data = richness.all.trts)
-summary(richness)
-Anova(richness)
-
-```
-
-```{r}
-animal.diversity <- lm(H ~ treatment, data = diversity.animals.trts)
-summary(animal.diversity)
-Anova(animal.diversity)
-```
-
-```{r}
-
-animal.abundance <- lm(abund ~ treatment, data = diversity.animals.trts)
-summary(animal.abundance)
-Anova(animal.abundance)
-```
-
-## 3: Algal diversity & cover
-
-```{r}
-ggplot(diversity.algae.trts, aes(x=treatment, y = H, color = treatment)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
-```
-
-```{r}
-ggplot(diversity.algae.trts, aes(x=treatment, y = total_cover, color = treatment)) + geom_boxplot() + scale_color_manual(values = c("skyblue4","skyblue2", "tomato4", "tomato2")) +  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + theme_bw()
-```
-
-```{r}
-algal.diversity <- lm(H ~ treatment, data = diversity.algae.trts)
-summary(algal.diversity)
-Anova(algal.diversity)
-```
-
-```{r}
-
-algal.cover <- lm(total_cover ~ treatment, data = diversity.algae.trts)
-summary(algal.cover)
-Anova(algal.cover)
-```
-
-Moral of the story: The animal component of the community seems way more affected than the algal component.
-
-## Visual surveys NMDS
-
-```{r, message=FALSE, results = "hide"}
-comm.visual <- visuals %>% select(-plot_number)
-comm.visual.matrix <- as.matrix(comm.visual)
-View(visuals)
-comm.visual <- metaMDS(comm.visual.matrix, k = 2, try = 999, autotransform = T)
-
-treatment.codes <- as.data.frame(plot.info$treatment_original_numeric) %>% rename(treatment = 1) 
-
-
-```
-
-```{r}
-knitr::include_graphics("../outputs/community_visual_shade.png")
-```
-
-```{r, results ="hide",message=FALSE}
-perm.y1 <- adonis(comm.visual.matrix ~ treatment, data = treatment.codes, perm = 99)
-perm.y1
-
-dist.y1 <- vegdist(comm.visual.matrix, method = "bray")
-
-disp.y1 <- betadisper(dist.y1, type = "centroid", group = treatment.codes$treatment)
-anova(disp.y1)
-
-boxplot(disp.y1, xlab = "Treatment")
-
-```
-
-
-```{r}
-
-comm_ord <- ordiplot(comm.visual, type = "none")
-points(comm_ord, what = "sites", col = "black")
-orditorp(comm_ord, display="species",col="grey30", air=1)
-ordiellipse(comm_ord, groups = treatment.codes$treatment, 
-            col = c("tomato4","skyblue4", "tomato2","skyblue2"), lwd = 1.5)
-legend("bottom", col = c("tomato4","skyblue4", "tomato2","skyblue2"), legend = c("unshaded intact","shaded intact", "unshaded removal","shaded removal"), bty = "n", lty = 1, lwd = 2)
-
-```
-
-
 

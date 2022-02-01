@@ -36,7 +36,7 @@ angle.correct <- angle.calculate %>% mutate(orient_rad = (((orientation_raw_degr
 # now for the calculations
 
 solar.angles <- angle.correct %>% mutate(gamma = abs(orient_rad - solar_az_rad)) %>% mutate(theta = acos(sin(beta)*cos(sigma) + cos(gamma)*cos(beta)*sin(sigma))) %>% mutate(angle = (theta/(2*pi)*360)) %>% 
-  select(prop_mort, angle, site_code) %>% mutate(site_code = str_replace_all(site_code, "WA","WB"))
+  select(prop_mort, angle, site_code) %>% mutate(site_code = str_replace_all(site_code, "WA","WBS"))
 
 ```
 

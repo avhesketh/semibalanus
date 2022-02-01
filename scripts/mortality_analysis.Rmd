@@ -52,13 +52,18 @@ bamfield.panel # still odd. imputation is making temp high at 10 PM, which isn't
 # just go without.
 
 
-hourly.temp.vic <- read_csv("../raw_data/hourly_temps_figure/hourly_temp_vicairport.csv", col_select = c(5:8, 10, 14)) %>% filter(Day <= 30 & Day >=23) %>% rename(date_time = 1, temp = 5, humidity = 6) %>% mutate(date_time = ymd_hms(date_time)) %>% View()
+hourly.temp.vic <- read_csv("../raw_data/hourly_temps_figure/hourly_temp_vicairport.csv", col_select = c(5:8, 10, 14)) %>% filter(Day <= 30 & Day >=23) %>% rename(date_time = 1, temp = 5, humidity = 6) %>% mutate(date_time = ymd_hms(date_time))
 
 yyj.panel <- ggplot(data = hourly.temp.vic, aes(x = date_time)) + geom_line(aes(y = temp), col = "mediumorchid4", lwd = 1) + annotate(geom = "rect", xmin = ymd_hms("2021-06-23 00:00:00"), xmax = ymd_hms("2021-06-30 23:00:00"), ymin = 9.8, ymax = 19.9, alpha = 0.3) + geom_line(aes(y = 14.9), lty = "dotted") + labs(x = "Date", y = "Temperature (ºC)") + coord_cartesian(xlim = c(ymd_hms("2021-06-23 00:00:00"), ymd_hms("2021-06-30 23:00:00")), expand = F, ylim = c(5,40)) + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12))
 yyj.panel
 
-S1Fig1 <- bamfield.panel / yyj.panel + plot_annotation(tag_levels = "A")
-S1Fig1
+hourly.temp.bellabella <-read_csv("../raw_data/hourly_temps_figure/temp_bellabella_june.csv", col_select = c(5:8, 10, 14)) %>% filter(Day <= 30 & Day >=23) %>% rename(date_time = 1, temp = 5, humidity = 6) %>% mutate(date_time = ymd_hms(date_time))
+
+bb.panel <- ggplot(data = hourly.temp.bellabella, aes(x = date_time)) + geom_line(aes(y = temp), col = "olivedrab4", lwd = 1) + annotate(geom = "rect", xmin = ymd_hms("2021-06-23 00:00:00"), xmax = ymd_hms("2021-06-30 23:00:00"), ymin = 9.9, ymax = 19.0, alpha = 0.3) + geom_line(aes(y = 13.5), lty = "dotted") + labs(x = "Date", y = "Temperature (ºC)") + coord_cartesian(xlim = c(ymd_hms("2021-06-23 00:00:00"), ymd_hms("2021-06-30 23:00:00")), expand = F, ylim = c(5,40)) + theme_classic() + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12))
+bb.panel
+
+S1Fig1 <- bb.panel / yyj.panel + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(face = "bold"))
+
 ggsave(S1Fig1, filename = "../outputs/S1Fig1.png", dpi = 1200, width = 7, height = 5, units = "in" )
 ```
 
@@ -97,7 +102,7 @@ temp.df.rename <- temp.df.all %>% rename("date" = 1, "year" = 2,"month" = 3, "da
 # need to next associate each site with a sampling date, and filter out any temp data that was recorded after
 
 survey.info <- read_csv("../raw_data/SBC_siteinformation.csv") %>% 
-  select(site_code, latitude_degrees, longitude_degrees, mortality, mortality_survey, degrees_from_north)  %>% na.omit() 
+  select(site_code, latitude_degrees, longitude_degrees, mortality, mortality_survey, orientation_degrees, solar_azimuth)  %>% na.omit() %>% mutate(degrees_from_azimuth = abs(orientation_degrees-solar_azimuth))
 
 survey.dates <- survey.info %>% select(site_code, mortality_survey)
 
@@ -115,16 +120,10 @@ temp.summary <- required.temp.data %>%
 
 temp.hw.only <- temp.df.rename %>% filter(date <= "2021-06-29" & date >= "2021-06-25")
 
-imputed.tofino.hw <- hourly.temp.tofino %>% select(-Day, -Month,-time) %>% separate(date_time, into = c("date","time"), sep = " ", remove = F) %>% mutate(site_code = "PP") %>% filter(date <= "2021-06-29" & date >= "2021-06-25")
-
-imputed.tofino.mdmean <- imputed.tofino.hw %>% group_by(site_code, date) %>% summarize(max_temp = max(temp)) %>% ungroup() %>% group_by(site_code) %>% summarize(mean_daily_max_temp_hw = mean(max_temp))                                                 
-temp.hw.summary <- temp.hw.only %>% 
-  group_by(site_code) %>% summarize(mean_daily_temp_hw = mean(mean_temp_C, na.rm=T), mean_daily_max_temp_hw = mean(max_temp_C, na.rm=T)) %>% mutate(site_code = if_else(site_code == "BS", "WBS", site_code)) #%>% filter(site_code != "PP") %>% full_join(imputed.tofino.mdmean)
-
 # join to site information data frame
 
 explanatory.variables <- survey.info %>% left_join(temp.hw.summary) %>% 
-   select(-mortality, -mortality_survey, -latitude_degrees)
+   select(-mortality, -mortality_survey, -latitude_degrees, -orientation_degrees,-solar_azimuth)
 
 ```
 
@@ -196,17 +195,17 @@ rm(pkgs)
 # check correlation of temperature variables
 #ggpairs(mort.model.df %>% select(mean_daily_max_temp,mean_daily_max_temp_hw,mean_daily_temp,mean_daily_temp_hw))
 
-mort.mod.0 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code), data = mort.model.df, family = binomial(link = "logit"))
+mort.mod.0 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_azimuth + (1 | site_code), data = mort.model.df, family = binomial(link = "logit"))
 
 plot(density(residuals(mort.mod.0, type = "response"))) # has a long tail ... data are overdispersed ... need to look at other fixes.
 
-mort.mod.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code/transect), data = mort.model.df, family = tweedie())
+mort.mod.1 <- glmmTMB(prop_dead ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_azimuth + (1 | site_code/transect), data = mort.model.df, family = tweedie())
 
 plot(simulateResiduals(mort.mod.1)) # this seems to work. 
 
 #try the beta model since this is more correct
 
-mort.mod.2 <- glmmTMB((prop_dead*nrow(mort.model.df)+0.5)/nrow(mort.model.df) ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_north + (1 | site_code/transect), data = mort.model.df, family = beta_family())
+mort.mod.2 <- glmmTMB((prop_dead*nrow(mort.model.df)+0.5)/nrow(mort.model.df) ~ mean_daily_max_temp_hw + mean_low_tide_time + algal_prop_cover + degrees_from_azimuth + (1 | site_code/transect), data = mort.model.df, family = beta_family())
 
 plot(simulateResiduals(mort.mod.2)) # the error distribution family seems wrong. Stick with Tweedie!
 
@@ -229,7 +228,7 @@ Anova(mort.mod.1)
 
 ```{r, include=F, results="hide"}
 
-mort.summary <- mort.model.df %>% mutate(site_code = factor(site_code)) %>% group_by(site_code, longitude_degrees, degrees_from_north, mean_low_tide_time) %>% summarize(average_mort = mean(prop_dead, na.rm = T), average_maxtemp = mean(mean_daily_max_temp_hw)) %>% mutate(site_code = factor(site_code))
+mort.summary <- mort.model.df %>% mutate(site_code = factor(site_code)) %>% group_by(site_code, longitude_degrees, degrees_from_azimuth, mean_low_tide_time) %>% summarize(average_mort = mean(prop_dead, na.rm = T), average_maxtemp = mean(mean_daily_max_temp_hw)) %>% mutate(site_code = factor(site_code))
 
 ```
 
@@ -241,19 +240,18 @@ First, a plot of mortality across sites, coded by temperature (note that sites a
 
 ```{r, echo = F}
 require(tidyverse)
-require(viridis)
 library(wesanderson)
-library(broom)
-View(predict.mort)
 
-new.dat <- data.frame(degrees_from_north = mort.model.df$degrees_from_north, 
+new.dat <- data.frame(degrees_from_azimuth = mort.model.df$degrees_from_azimuth, 
                       mean_daily_max_temp_hw = median(mort.model.df$mean_daily_max_temp_hw),
                       algal_prop_cover = median(mort.model.df$algal_prop_cover, na.rm = T),
                       mean_low_tide_time = median(mort.model.df$mean_low_tide_time),
                       site_code = mort.model.df$site_code, transect = mort.model.df$transect)
 new.dat$fit <- predict(mort.mod.1, new.dat %>% na.omit(), type = "response")
 
-mort.plot <- ggplot(data = mort.model.df, aes(col = degrees_from_north, y = prop_dead*100, x = mean_daily_max_temp_hw)) + geom_jitter(size = 2, width = 0.2, alpha = 0.8) + scale_color_gradientn(colors = wes_palette("Zissou1", 20, type = "continuous"), limits = c(0,180)) + theme_classic() + labs(y = "Mortality (%)", col = "Aspect (º)", x = "Mean maximum daily temperature (ºC)") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_smooth(aes(y = fit*100), data= new.dat, method = "lm", se = T, col= "black")
+pal <- wes_palette("Zissou1", 20, type = "continuous")
+
+mort.plot <- ggplot(data = mort.model.df, aes(col = degrees_from_azimuth, y = prop_dead*100, x = mean_daily_max_temp_hw)) + geom_jitter(size = 2, width = 0.2, alpha = 0.8) + scale_color_gradientn(colors = pal, trans="reverse") + theme_classic() + labs(y = "Mortality (%)", col = "Aspect (º)", x = "Mean maximum daily temperature (ºC)") + theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + geom_smooth(aes(y = fit*100), data= new.dat, method = "lm", se = T, col= "black")
 mort.plot
 
 ggsave(filename = "../outputs/Fig3.png", dpi = 1200, mort.plot, height = 2.5, width = 3.5, units = "in", scale = 1.5)
