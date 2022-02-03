@@ -234,16 +234,19 @@ set.seed(4947)
 
 ```{r}
 plot.info <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv")
+species.repair <- read_csv("../raw_data/SBHW_taxonomic_20220105.csv") %>% select(original_code, final_code)
 
-infauna_sa.1 <- read_csv("../raw_data/shade/SBHW_SHADE_infauna.csv") %>% rename(plot_number = plot_id) %>%  left_join(plot.info) %>% select( -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric)
+infauna_sa.1 <- read_csv("../raw_data/shade/SBHW_SHADE_infauna.csv") %>% rename(plot_number = plot_id) %>% pivot_longer(cols = -plot_number, names_to = "original_code", values_to = "abund") %>% left_join(species.repair) %>% select(-original_code) %>% group_by(plot_number, final_code) %>% summarize(abund = sum(abund)) %>% pivot_wider(id_cols = plot_number, names_from = final_code, values_from = abund) %>% left_join(plot.info) %>% select( -treatment_final_numeric, -shore_level) %>% rename(treatment = treatment_original_numeric) 
 
-infauna_sa <- infauna_sa.1 %>% select(-plot_number)
+infauna_sa <- infauna_sa.1 %>% ungroup() %>% select(-plot_number)
 
-infauna_factors <- infauna_sa %>% select(treatment, block)
+infauna_factors <- infauna_sa %>% select(treatment, block) %>% mutate(treatment = factor(treatment), block = factor(block))
+
 infauna_matrix <- infauna_sa %>% select(-treatment, -block) %>% as.matrix()
 
+h <- how(block = infauna_factors$block, nperm = 999)
+
 infauna_bray <- invisible(metaMDS(infauna_matrix, k=2, try = 999, autotransform = T))
-infauna_bray$stress
 
 # only non-rare species (>5 individuals)
 
@@ -287,6 +290,9 @@ veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
 df_ell$treatment <- df_ell$group
 
 library(ggrepel)
+
+infauna_bray$stress
+
 ## create ggplot ordination
 infauna.ordination.sa <- ggplot() + 
   geom_path(data=df_ell,aes(x = NMDS1,y =NMDS2,colour=treatment)) +
@@ -301,17 +307,21 @@ infauna.ordination.sa <- ggplot() +
         axis.text = element_text(size = 12),
         legend.title = element_text(size = 14),
         legend.text = element_text(size = 12)) +
-  annotate("text", x = -0.25, y = 1, label = "Stress = 0.1882", size = 5)
+  annotate("text", x = 0.75, y = 0.95, label = "Stress = 0.1739", size = 5)
 infauna.ordination.sa
 
 ggsave(filename = "../outputs/Fig6.png", infauna.ordination.sa, dpi = 1200,
        width = 3.5, height = 2.5, units = "in", scale = 2)
 
-adonis(infauna_abund ~ treatment, infauna_factors)
+setBlocks(h) <- NULL
+getBlocks(h)
 
-dist <- vegdist(infauna_abund, "bray")
+adonis(infauna_matrix ~ treatment, permutations = h, infauna_factors)
 
-infauna.beta <- betadisper(dist, infauna_factors$treatment)
+dist <- vegdist(infauna_matrix, "bray")
+
+infauna.beta <- betadisper(dist, infauna_factors$treatment, bias.adjust = T)
+
 anova(infauna.beta)
 
 ```
@@ -365,17 +375,17 @@ infauna.ordination.sa.abund <- ggplot() +
         axis.text = element_text(size = 12),
         legend.title = element_text(size = 14),
         legend.text = element_text(size = 12)) +
-  annotate("text", x = 0.75, y = 0.6, label = "Stress = 0.1841", size = 5)
+  annotate("text", x = 0.75, y = -0.4, label = "Stress = 0.1770", size = 5)
 infauna.ordination.sa.abund
 
 ggsave(filename = "../outputs/S1Fig8.png", infauna.ordination.sa.abund, dpi = 1200,
        width = 3.5, height = 2.5, units = "in", scale = 2)
 
-adonis(infauna_matrix ~ treatment, infauna_factors)
+adonis(infauna_abund ~ treatment, permutations = h, infauna_factors)
 
-dist <- vegdist(infauna_matrix, "bray")
+dist <- vegdist(infauna_abund, "bray")
 
-infauna.beta <- betadisper(dist, infauna_factors$treatment)
+infauna.beta <- betadisper(dist, infauna_factors$treatment, bias.adjust = T)
 anova(infauna.beta)
 
 ```

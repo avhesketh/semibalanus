@@ -61,7 +61,6 @@ for (file in 1: length(sample.files)){
 infauna.clean <- infauna.all %>% replace(is.na(.), 0) %>% separate(file_name, c("code", "data", "collection_number"), sep = "_") %>% select(-code, -data) %>% mutate(collection_number = as.numeric(str_remove_all(collection_number, ".csv"))) %>% left_join(collection.info)
 
 # bring in color palette from maps script
-
 palette <- site_info %>% select(site_code, full.pal)
 
 # filter by time: only collections made at the end of summer 2021 (NOT 1 and 2)
@@ -77,13 +76,17 @@ infauna.matrix <- infauna.summer %>% ungroup() %>%
 infauna.matrix <- as.matrix(infauna.matrix)
 
 # ready to analyze
-comm.infauna <- metaMDS(infauna.matrix, k = 2, try = 999, autotransform = T)
+comm.infauna <- metaMDS(infauna.matrix, k = 3, try = 999, autotransform = T)
 stressplot(comm.infauna) # plot stress
 comm.infauna$stress # print stress of final model (ok with 2 dimensions, but not excellent)
 # if you try replotting with 3 dimensions, stress is <0.2, so better to have all 3
 
 #PERMANOVA
 adonis(infauna.matrix~site_code, data = infauna.summer)
+
+dist <- vegdist(infauna.matrix, method = "bray")
+gradient.beta <- betadisper(dist, group = infauna.summer$site_code, bias.adjust = T)
+anova(gradient.beta)
 
 ```
 ```
@@ -106,7 +109,8 @@ species.scores$species <- rownames(species.scores)
 
 infauna.ordination <- ggplot() + 
   geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=site_code),size=3, alpha = 0.8) + # add the point markers
-  geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size = 3, alpha=0.7) +
+  geom_text_repel(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size = 2.5, alpha=0.7,
+                  max.overlaps = 500, box.padding=0.05, min.segment.length = 5) +
   coord_equal() +
   theme_bw() +
   scale_color_manual(values = col.levels) +
@@ -120,7 +124,7 @@ infauna.ordination <- ggplot() +
         legend.text = element_text(size = 12))
 
 infauna.ordination
-ggsave(filename = "../outputs/S1Fig1.png", infauna.ordination, dpi = 1200)
+ggsave(filename = "../outputs/S1Fig2.png", infauna.ordination, dpi = 1200)
 
 ```
 
@@ -165,7 +169,7 @@ infauna.richness <- infauna.summer %>% select(site_code, replicate)
 richness <- with(infauna.richness, specnumber(infauna.matrix))
 
 # join with data to incude informative factors
-infauna.diversity <- cbind(cbind(infauna.summer, richness),H) %>% rename(richness = 55, Shannon_diversity = 56) %>% mutate(site_code = factor(site_code, levels = site.levels))
+infauna.diversity <- cbind(cbind(infauna.summer, richness),H) %>% rename(richness = 56, Shannon_diversity = 57) %>% mutate(site_code = factor(site_code, levels = site.levels))
 
 infauna.div.summary <- infauna.diversity %>% group_by(site_code, full.pal) %>% summarize(mean.rich = mean(richness), se.rich = std.error(richness), mean.H = mean(Shannon_diversity), se.H = std.error(Shannon_diversity)) %>% mutate(site_code = factor(site_code, levels = site.levels))
 
@@ -238,7 +242,7 @@ adonis(infauna.matrix~ site_code*collection_date, data = infauna.shift)
 
 dist <- vegdist(infauna.matrix, "bray")
 
-infauna.beta <- betadisper(dist, infauna.shift$collection_number)
+infauna.beta <- betadisper(dist, infauna.shift$collection_number, bias.adjust = T)
 anova(infauna.beta)
 
 ```

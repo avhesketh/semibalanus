@@ -1,68 +1,69 @@
-﻿taxon_name,taxon_number,valid_name,original_code,final_code,genus,species,kingdom,phylum,class,order,family,authority,coarse_grouping,functional_grouping
-Gnorimosphaeroma oregonensis,63,Gnorimosphaeroma oregonense,GNOR,GNOR,Gnorimosphaeroma,oregonense,Animalia,Arthropoda,Malacostraca,Isopoda,Sphaeromatidae,"Dana, 1853",Isopoda,Isopoda
-Onchidoris bilamellata,2,Onchidoris bilamellata,ONBI,ONBI,Onchidoris,bilamellata,Animalia,Mollusca,Gastropoda,Nudibranchia,Onchidorididae,"Linnaeus, 1767",Gastropoda,Nudibranchia
-Lottia digitalis,3,Lottia digitalis,LODI,LODI,Lottia,digitalis,Animalia,Mollusca,Gastropoda,,Lottidae,"Rathke, 1833",Gastropoda,Lottia
-Lottia paradigitalis,4,Lottia paradigitalis,LOPA,LOPA,Lottia,paradigitalis,Animalia,Mollusca,Gastropoda,,Lottidae,"Fritchman, 1960",Gastropoda,Lottia
-Lottia pelta,5,Lottia pelta,LOPE,LOPE,Lottia,pelta,Animalia,Mollusca,Gastropoda,,Lottidae,"Rathke, 1833",Gastropoda,Lottia
-Littorina sitkana,7,Littorina sitkana,LISI,LISI,Littorina,scutulata,Animalia,Mollusca,Gastropoda,Littorinimorpha,Littorinidae,"Philippi, 1846",Gastropoda,Littorina
-Littorina scutulata,6,Littorina scutulata,LISC,LISC,Littorina,sitkana,Animalia,Mollusca,Gastropoda,Littorinimorpha,Littorinidae,"Gould, 1849",Gastropoda,Littorina
-Syllidae,8,Syllidae,SYLL,SYLL,,,Animalia,Annelida,Polychaeta,Phyllodocida,Syllidae,"Grube, 1850",Polychaeta,Polychaeta
-Spionidae,9,Spionidae,SPIO,SPIO,,,Animalia,Annelida,Polychaeta,Spionida,Spionidae,"Grube, 1850",Polychaeta,Polychaeta
-Nereidae,10,Nereidae,NERE,NERE,,,Animalia,Annelida,Polychaeta,Phyllodocida,Nereididae,"Blainville, 1818",Polychaeta,Polychaeta
-"Amphipoda, native",11,Amphipoda,AMNA,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda,Amphipoda
-Amphipoda larvae,12,Amphipoda,AMLA,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda,Amphipoda
-"Amphipoda, invasive",13,Amphipoda,AMIN,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda,Amphipoda
-Cyanoplax fernaldi,14,Cyanoplax fernaldi,CYFE,CYFE,Cyanoplax,fernaldi,Animalia,Mollusca,Polyplacophora,Chitonida,Tonicellidae,"Eernisse, 1986",Polyplacophora,Polyplacophora
-Anthopleura elegantissima,15,Anthopleura elegantissima,ANEL,ANEL,Anthopleura,elegantissima,Animalia,Cnidaria,Anthozoa,Actinaria,Actiniidae,"Brandt, 1835",Anthozoa,Anthozoa
-Mytilus trossulus,16,Mytilus trossulus,MYTR,MYTR,Mytilus,trossulus,Animalia,Mollusca,Bivalvia,Mytilida,Mytilidae,"Gould, 1850",Bivalvia,Bivalvia
-Paranemertes peregrina,17,Paranemertes peregrina,PAPE,PAPE,Paranemertes,peregrina,Animalia,Nemertea,Hoplonemertea,Monostilifera,Neesiidae,"Coe, 1901",Nemertea,Nemertea
-Emplectonema gracile,18,Emplectonema gracile,EMGR,EMGR,Emplectonema,gracile,Animalia,Nemertea,Hoplonemertea,Monostilifera,Emplectonematidae,"Johnston, 1837",Nemertea,Nemertea
-Tetrastemma bicolor,19,Quasitetrastemma bicolor,QUBI,QUBI,Quasitetrastemma,bicolor,Animalia,Nemertea,Hoplonemertea,Monostilifera,,"Coe, 1901",Nemertea,Nemertea
-Amphiporus sp.,20,Amphiporus sp.,AMPH,AMPH,Amphiporus,,Animalia,Nemertea,Hoplonemertea,Monostilifera,Amphiporidae,"Ehrenberg, 1831",Nemertea,Nemertea
-Munna chromatocephala,21,Munna chromatocephala,MUCH,MUCH,Munna,chromatocephala,Animalia,Arthropoda,Malacostraca,Isopoda,Munnidae,"Menzies, 1952",Isopoda,Isopoda
-Hymenoptera,22,Hymenoptera,HYME,HYME,,,Animalia,Arthropoda,Insecta,Hymenoptera,,,Insecta,Insecta
-Diptera,23,Diptera,DIPT,DIPT,,,Animalia,Arthropoda,Insecta,Diptera,,,Insecta,Insecta
-Coleoptera,24,Coleoptera,COLE,COLE,,,Animalia,Arthropoda,Insecta,Coleoptera,,,Insecta,Insecta
-Polychaeta,52,Polychaeta,POLY,POLY,,,Animalia,Annelida,Polychaeta,,,"Grube, 1850",Polychaeta,Polychaeta
-Lasaea rubra,25,Lasaea rubra,LARU,LARU,Lasaea,rubra,Animalia,Mollusca,Bivalvia,Galeommatida,Lasaeidae,"Montagu, 1803",Bivalvia,Bivalvia
-Platyhelminthes,26,Platyhelminthes,PLAT,PLAT,,,Animalia,Platyhelminthes,,,,"Minot, 1876",Platyhelminthes,Platyhelminthes
-Mytilus californianus,27,Mytilus californianus,MYCA,MYCA,Mytilus,californianus,Animalia,Mollusca,Bivalvia,Mytilida,Mytilidae,"Conrad, 1837",Bivalvia,Bivalvia
-Nucella ostrina,28,Nucella ostrina,NUOS,NUOS,Nucella,ostrina,Animalia,Mollusca,Gastropoda,Neogastropoda,Muricidae,"Gould, 1852",Gastropoda,Nucella
-Nucella canaliculata,29,Nucella canaliculata,NUCA,NUCA,Nucella,canaliculata,Animalia,Mollusca,Gastropoda,Neogastropoda,Muricidae,"Duclos, 1832",Gastropoda,Nucella
-Annelida,30,Annelida,ANNE,ANNE,,,Animalia,Annelida,,,,,Annelida,Annelida
-Detonella papillicornis,32,Detonella papillicornis,DEPA,DEPA,Detonella,papillicornis,Animalia,Arthropoda,Malacostraca,Isopoda,Detonidae,"Richardson, 1904",Isopoda,Isopoda
-Leptochitona dentiens,33,Cyanoplax dentiens,CYDE,CYDE,Cyanoplax,dentiens,Animalia,Mollusca,Polyplacophora,Chitonida,Tonicellidae,"A. Gould, 1846",Polyplacophora,Polyplacophora
-Nematoda,34,Nematoda,NEMA,NEMA,,,Animalia,Nematoda,,,,,Nematoda,Nematoda
-Cucumaria pseudocurata,35,Cucumaria pseudocurata,CUPS,CUPS,Cucumaria,pseudocurata,Animalia,Echinodermata,Holothuroidea,Dendrochirotida,Cucumariidae,"Deichmann, 1938",Holothuroidea,Holothuroidea
-Aribellidae,36,Oenonidae,OENO,OENO,,,Animalia,Annelida,Polychaeta,Eunicida,Oenonidae,"Kinberg, 1865",Polychaeta,Polychaeta
-Oedoperena sp.,37,Oedoparena,OESP,OESP,Oedoparena,,Animalia,Arthropoda,Insecta,Diptera,Dryomyzidae,,Insecta,Insecta
-Pagurus hirsutiusculus,38,Pagurus hirsutiusculus,PAHI,PAHI,Pagurus,hirsutiusculus,Animalia,Arthropoda,Malacostraca,Decapoda,Paguridae,"Dana, 1851",Malacostraca,Anomura
-Hemigrapsus nudus,39,Hemigrapsus nudus,HENU,HENU,Hemigrapsus,nudus,Animalia,Arthropoda,Malacostraca,Decapoda,Varunidae,"Dana, 1851",Malacostraca,Decapoda
-Katharina tunicata,40,Katharina tunicata,KATU,KATU,Katharina,tunicata,Animalia,Mollusca,Polyplacophora,Chitonida,Mopaliidae,"Wood, 1815",Polyplacophora,Polyplacophora
-Phascoloma agassizii,42,Phascolosoma agassizii,PHAG,PHAG,Phascolosoma,agassizii,Animalia,Sipuncula,Phascolosomatidea,Phascolosomatida,Phascolosomatidae,"Keferstein, 1866",Sipuncula,Sipuncula
-Leptochiton rugatus,43,Leptochiton rugatus,LERU,LERU,Leptochiton,rugatus,Animalia,Mollusca,Polyplacophora,Lepidopleurida,Leptochitonidae,"Carpenter in Pilsbry, 1892",Polyplacophora,Polyplacophora
-Lottia scutum,44,Lottia scutum,LOSC,LOSC,Lottia,scutum,Animalia,Mollusca,Gastropoda,,Lottidae,"Rathke, 1833",Gastropoda,Lottia
-Amiphopoda,45,Amiphopoda,AMSP,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda,Amphipoda
-Balanus glandula,46,Balanus glandula,BAGL,BAGL,Balanus,glandula,Animalia,Arthropoda,Thecostraca,Balanomorpha,Balanidae,"Darwin, 1854",Cirripedia,Cirripedia
-Chthamalus dalli,47,Chthamalus dalli,CHDA,CHDA,Chthamalus,dalli,Animalia,Arthropoda,Thecostraca,Balanomorpha,Chthamalidae,"Pilsbry, 1916",Cirripedia,Cirripedia
-Corallina vancouveriensis,48,Corallina vancouveriensis,COVA,COVA,Corallina,vancouveriensis,Plantae,Rhodophyta,Florideophyceae,Corallinales,Corallinaceae,"Yendo, 1902",Rhodophyta,Coralline
-Endocladia muricata,49,Endocladia muricata,ENMU,ENMU,Endocladia,muricata,Plantae,Rhodophyta,Florideophyceae,Gigartinales,Endocladiaceae,"(Enlicher) J. Agardh, 1847",Rhodophyta,Turf
-Fucus distichus,50,Fucus distichus,FUDI,FUDI,Fucus,distichus,Chromista,Ochrophyta,Phaeophyceae,Fucales,Fucaceae,"Linnaeus, 1767",Phaeophyceae,Fleshy
-Hildenbrandia sp.,51,Hildenbrandia sp.,HISP,HISP,Hildenbrandia,,Plantae,Rhodophyta,Florideophyceae,Hildenbrandiales,Hildenbrandiaceae,"Nardo, 1834",Rhodophyta,Crustose
-Isopoda,53,Isopoda,ISOP,ISOP,,,Animalia,Arthropoda,Malacostraca,Isopoda,,"Latreille, 1817",Isopoda,Isopoda
-Mytilus sp.,54,Mytilus sp.,MYSP,MYSP,Mytilus,,Animalia,Mollusca,Bivalvia,Mytilida,Mytilidae,"Linnaeus, 1758",Bivalvia,Bivalvia
-Nereis vexillosa,55,Nereis vexillosa,NEVE,NEVE,Nereis,vexillosa,Animalia,Annelida,Polychaeta,Phyllodocida,Nereididae,"Grube, 1851",Polychaeta,Polychaeta
-Petrocelis sp.,56,Mastocarpus,PESP,PESP,Mastocarpus,,Plantae,Rhodophyta,Florideophyceae,Gigartinales,Phyllophoraceae,"Kútzing, 1843",Rhodophyta,Crustose
-Polyplacophora,57,Polyplacophora,POPL,POPL,,,Animalia,Mollusca,Polyplacophora,,,"Gray, 1821",Polyplacophora,Polyplacophora
-Semibalanus cariosus,58,Semibalanus cariosus,SECA,SECA,Semibalanus,cariosus,Animalia,Arthropoda,Thecostraca,Balanomorpha,Balanidae,"Pallass, 1788",Cirripedia,Cirripedia
-Ulothrix sp. ,59,Ulothrix sp. ,ULSP,ULSP,Ulothrix,,Plantae,Chlorophyta,Ulvophyceae,Ulotrichales,Ulotrichaceae,"Kútzing, 1833",Chlorophyta,Fleshy
-Nucella lamellosa,60,Nucella lamellosa,NULA,NULA,Nucella,lamellosa,Animalia,Mollusca,Gastropoda,Neogastropoda,Muricidae,"Gmelin, 1791",Gastropoda,Nucella
-Ulva lactuca,61,Ulva lactuca,ULLA,ULLA,Ulva,lactuca,Plantae,Chlorophyta,Ulvophyceae,Ulvales,Ulvaceae,"Linnaeus, 1753",Chlorophyta,Fleshy
-Bivalvia 1,62,Bivalvia,BIV1,BIV1,,,Animalia,Mollusca,Bivalvia,,,,Bivalvia,Bivalvia
-Dynamenella sheareri,1,Dynamenella sheareri,DYSH,DYSH,Dynamenella,sheareri,Animalia,Arthropoda,Malacostraca,Isopoda,Sphaeromatidae,"Hatch, 1947",Isopoda,Isopoda
-Pentidotea wosnesenskii,64,Pentidotea wosnesenskii,PEWO,PEWO,Pentidotea,wosnesenskii,Animalia,Arthropoda,Malacostraca,Isopoda,Idoteidae,"Brandt, 1851",Isopoda,Isopoda
-Polynoidae,65,Polynoidae,POLN,POLN,,,Animalia,Annelida,Polychaeta,Phyllodocida,Polynoidae,"Kinberg, 1856",Polychaeta,Polychaeta
-Halobisium occidentale,66,Halobisium occidentale,HAOC,HAOC,Halobisium,occidentale,Animalia,Arthropoda,Euchelicerata,Pseudoscorpiones,Neobisiidae,"Beier, 1931",Arachnida,Arachnida
-Terebellidae,67,Terebellidae,TERE,TERE,,,Animalia,Annelida,Polychaeta,Terebellida,Terebellidae,"Johnston, 1846",Polychaeta,Polychaeta
-Sabellidae,68,Sabellidae,SABE,SABE,,,Animalia,Annelida,Polychaeta,Sabellida,Sabellidae,"Latreille, 1825",Polychaeta,Polychaeta
-Tegula funebralis,69,Tegula funebralis,TEFU,TEFU,Tegula,funebralis,Animalia,Mollusca,Gastropoda,Trochida,Tegulidae,"A. Adams, 1855",Gastropoda,Tegula
+﻿taxon_name,taxon_number,valid_name,original_code,final_code,genus,species,kingdom,phylum,class,order,family,authority,coarse_grouping
+Gnorimosphaeroma oregonensis,63,Gnorimosphaeroma oregonense,GNOR,GNOR,Gnorimosphaeroma,oregonense,Animalia,Arthropoda,Malacostraca,Isopoda,Sphaeromatidae,"Dana, 1853",Isopoda
+Onchidoris bilamellata,2,Onchidoris bilamellata,ONBI,ONBI,Onchidoris,bilamellata,Animalia,Mollusca,Gastropoda,Nudibranchia,Onchidorididae,"Linnaeus, 1767",Gastropoda
+Lottia digitalis,3,Lottia digitalis,LODI,LODI,Lottia,digitalis,Animalia,Mollusca,Gastropoda,,Lottidae,"Rathke, 1833",Gastropoda
+Lottia paradigitalis,4,Lottia paradigitalis,LOPA,LOPA,Lottia,paradigitalis,Animalia,Mollusca,Gastropoda,,Lottidae,"Fritchman, 1960",Gastropoda
+Lottia pelta,5,Lottia pelta,LOPE,LOPE,Lottia,pelta,Animalia,Mollusca,Gastropoda,,Lottidae,"Rathke, 1833",Gastropoda
+Littorina sitkana,7,Littorina sitkana,LISI,LISI,Littorina,scutulata,Animalia,Mollusca,Gastropoda,Littorinimorpha,Littorinidae,"Philippi, 1846",Gastropoda
+Littorina scutulata,6,Littorina scutulata,LISC,LISC,Littorina,sitkana,Animalia,Mollusca,Gastropoda,Littorinimorpha,Littorinidae,"Gould, 1849",Gastropoda
+Syllidae,8,Syllidae,SYLL,SYLL,,,Animalia,Annelida,Polychaeta,Phyllodocida,Syllidae,"Grube, 1850",Polychaeta
+Spionidae,9,Spionidae,SPIO,SPIO,,,Animalia,Annelida,Polychaeta,Spionida,Spionidae,"Grube, 1850",Polychaeta
+Nereidae,10,Nereidae,NERE,NERE,,,Animalia,Annelida,Polychaeta,Phyllodocida,Nereididae,"Blainville, 1818",Polychaeta
+"Amphipoda, native",11,Amphipoda,AMNA,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda
+Amphipoda larvae,12,Amphipoda,AMLA,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda
+"Amphipoda, invasive",13,Amphipoda,AMIN,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda
+Cyanoplax fernaldi,14,Cyanoplax fernaldi,CYFE,CYFE,Cyanoplax,fernaldi,Animalia,Mollusca,Polyplacophora,Chitonida,Tonicellidae,"Eernisse, 1986",Polyplacophora
+Anthopleura elegantissima,15,Anthopleura elegantissima,ANEL,ANEL,Anthopleura,elegantissima,Animalia,Cnidaria,Anthozoa,Actinaria,Actiniidae,"Brandt, 1835",Anthozoa
+Mytilus trossulus,16,Mytilus trossulus,MYTR,MYTR,Mytilus,trossulus,Animalia,Mollusca,Bivalvia,Mytilida,Mytilidae,"Gould, 1850",Bivalvia
+Paranemertes peregrina,17,Paranemertes peregrina,PAPE,PAPE,Paranemertes,peregrina,Animalia,Nemertea,Hoplonemertea,Monostilifera,Neesiidae,"Coe, 1901",Nemertea
+Emplectonema gracile,18,Emplectonema gracile,EMGR,EMGR,Emplectonema,gracile,Animalia,Nemertea,Hoplonemertea,Monostilifera,Emplectonematidae,"Johnston, 1837",Nemertea
+Tetrastemma bicolor,19,Quasitetrastemma bicolor,QUBI,QUBI,Quasitetrastemma,bicolor,Animalia,Nemertea,Hoplonemertea,Monostilifera,,"Coe, 1901",Nemertea
+Amphiporus sp.,20,Amphiporus sp.,AMPH,AMPH,Amphiporus,,Animalia,Nemertea,Hoplonemertea,Monostilifera,Amphiporidae,"Ehrenberg, 1831",Nemertea
+Munna chromatocephala,21,Munna chromatocephala,MUCH,MUCH,Munna,chromatocephala,Animalia,Arthropoda,Malacostraca,Isopoda,Munnidae,"Menzies, 1952",Isopoda
+Hymenoptera,22,Hymenoptera,HYME,HYME,,,Animalia,Arthropoda,Insecta,Hymenoptera,,,Insecta
+Diptera,23,Diptera,DIPT,DIPT,,,Animalia,Arthropoda,Insecta,Diptera,,,Insecta
+Coleoptera,24,Coleoptera,COLE,COLE,,,Animalia,Arthropoda,Insecta,Coleoptera,,,Insecta
+Polychaeta,52,Polychaeta,POLY,POLY,,,Animalia,Annelida,Polychaeta,,,"Grube, 1850",Polychaeta
+Lasaea rubra,25,Lasaea rubra,LARU,LARU,Lasaea,rubra,Animalia,Mollusca,Bivalvia,Galeommatida,Lasaeidae,"Montagu, 1803",Bivalvia
+Platyhelminthes,26,Platyhelminthes,PLAT,PLAT,,,Animalia,Platyhelminthes,,,,"Minot, 1876",Platyhelminthes
+Mytilus californianus,27,Mytilus californianus,MYCA,MYCA,Mytilus,californianus,Animalia,Mollusca,Bivalvia,Mytilida,Mytilidae,"Conrad, 1837",Bivalvia
+Nucella ostrina,28,Nucella ostrina,NUOS,NUOS,Nucella,ostrina,Animalia,Mollusca,Gastropoda,Neogastropoda,Muricidae,"Gould, 1852",Gastropoda
+Nucella canaliculata,29,Nucella canaliculata,NUCA,NUCA,Nucella,canaliculata,Animalia,Mollusca,Gastropoda,Neogastropoda,Muricidae,"Duclos, 1832",Gastropoda
+Annelida,30,Annelida,ANNE,ANNE,,,Animalia,Annelida,,,,,Annelida
+Detonella papillicornis,32,Detonella papillicornis,DEPA,DEPA,Detonella,papillicornis,Animalia,Arthropoda,Malacostraca,Isopoda,Detonidae,"Richardson, 1904",Isopoda
+Leptochitona dentiens,33,Cyanoplax dentiens,CYDE,CYDE,Cyanoplax,dentiens,Animalia,Mollusca,Polyplacophora,Chitonida,Tonicellidae,"A. Gould, 1846",Polyplacophora
+Nematoda,34,Nematoda,NEMA,NEMA,,,Animalia,Nematoda,,,,,Nematoda
+Cucumaria pseudocurata,35,Cucumaria pseudocurata,CUPS,CUPS,Cucumaria,pseudocurata,Animalia,Echinodermata,Holothuroidea,Dendrochirotida,Cucumariidae,"Deichmann, 1938",Holothuroidea
+Aribellidae,36,Oenonidae,OENO,OENO,,,Animalia,Annelida,Polychaeta,Eunicida,Oenonidae,"Kinberg, 1865",Polychaeta
+Oedoperena sp.,37,Oedoparena,OESP,OESP,Oedoparena,,Animalia,Arthropoda,Insecta,Diptera,Dryomyzidae,,Insecta
+Pagurus hirsutiusculus,38,Pagurus hirsutiusculus,PAHI,PAHI,Pagurus,hirsutiusculus,Animalia,Arthropoda,Malacostraca,Decapoda,Paguridae,"Dana, 1851",Malacostraca
+Hemigrapsus nudus,39,Hemigrapsus nudus,HENU,HENU,Hemigrapsus,nudus,Animalia,Arthropoda,Malacostraca,Decapoda,Varunidae,"Dana, 1851",Malacostraca
+Katharina tunicata,40,Katharina tunicata,KATU,KATU,Katharina,tunicata,Animalia,Mollusca,Polyplacophora,Chitonida,Mopaliidae,"Wood, 1815",Polyplacophora
+Phascoloma agassizii,42,Phascolosoma agassizii,PHAG,PHAG,Phascolosoma,agassizii,Animalia,Sipuncula,Phascolosomatidea,Phascolosomatida,Phascolosomatidae,"Keferstein, 1866",Sipuncula
+Leptochiton rugatus,43,Leptochiton rugatus,LERU,LERU,Leptochiton,rugatus,Animalia,Mollusca,Polyplacophora,Lepidopleurida,Leptochitonidae,"Carpenter in Pilsbry, 1892",Polyplacophora
+Lottia scutum,44,Lottia scutum,LOSC,LOSC,Lottia,scutum,Animalia,Mollusca,Gastropoda,,Lottidae,"Rathke, 1833",Gastropoda
+Amiphopoda,45,Amiphopoda,AMSP,AMSP,,,Animalia,Arthropoda,Malacostraca,Amphipoda,,"Latreille, 1816",Amphipoda
+Balanus glandula,46,Balanus glandula,BAGL,BAGL,Balanus,glandula,Animalia,Arthropoda,Thecostraca,Balanomorpha,Balanidae,"Darwin, 1854",Cirripedia
+Chthamalus dalli,47,Chthamalus dalli,CHDA,CHDA,Chthamalus,dalli,Animalia,Arthropoda,Thecostraca,Balanomorpha,Chthamalidae,"Pilsbry, 1916",Cirripedia
+Corallina vancouveriensis,48,Corallina vancouveriensis,COVA,COVA,Corallina,vancouveriensis,Plantae,Rhodophyta,Florideophyceae,Corallinales,Corallinaceae,"Yendo, 1902",Rhodophyta
+Endocladia muricata,49,Endocladia muricata,ENMU,ENMU,Endocladia,muricata,Plantae,Rhodophyta,Florideophyceae,Gigartinales,Endocladiaceae,"(Enlicher) J. Agardh, 1847",Rhodophyta
+Fucus distichus,50,Fucus distichus,FUDI,FUDI,Fucus,distichus,Chromista,Ochrophyta,Phaeophyceae,Fucales,Fucaceae,"Linnaeus, 1767",Phaeophyceae
+Hildenbrandia sp.,51,Hildenbrandia sp.,HISP,HISP,Hildenbrandia,,Plantae,Rhodophyta,Florideophyceae,Hildenbrandiales,Hildenbrandiaceae,"Nardo, 1834",Rhodophyta
+Isopoda,53,Isopoda,ISOP,ISOP,,,Animalia,Arthropoda,Malacostraca,Isopoda,,"Latreille, 1817",Isopoda
+Mytilus sp.,54,Mytilus sp.,MYSP,MYSP,Mytilus,,Animalia,Mollusca,Bivalvia,Mytilida,Mytilidae,"Linnaeus, 1758",Bivalvia
+Nereis vexillosa,55,Nereis vexillosa,NEVE,NEVE,Nereis,vexillosa,Animalia,Annelida,Polychaeta,Phyllodocida,Nereididae,"Grube, 1851",Polychaeta
+Petrocelis sp.,56,Mastocarpus,PESP,PESP,Mastocarpus,,Plantae,Rhodophyta,Florideophyceae,Gigartinales,Phyllophoraceae,"Kútzing, 1843",Rhodophyta
+Polyplacophora,57,Polyplacophora,POPL,POPL,,,Animalia,Mollusca,Polyplacophora,,,"Gray, 1821",Polyplacophora
+Semibalanus cariosus,58,Semibalanus cariosus,SECA,SECA,Semibalanus,cariosus,Animalia,Arthropoda,Thecostraca,Balanomorpha,Balanidae,"Pallass, 1788",Cirripedia
+Ulothrix sp. ,59,Ulothrix sp. ,ULSP,ULSP,Ulothrix,,Plantae,Chlorophyta,Ulvophyceae,Ulotrichales,Ulotrichaceae,"Kútzing, 1833",Chlorophyta
+Nucella lamellosa,60,Nucella lamellosa,NULA,NULA,Nucella,lamellosa,Animalia,Mollusca,Gastropoda,Neogastropoda,Muricidae,"Gmelin, 1791",Gastropoda
+Ulva lactuca,61,Ulva lactuca,ULLA,ULLA,Ulva,lactuca,Plantae,Chlorophyta,Ulvophyceae,Ulvales,Ulvaceae,"Linnaeus, 1753",Chlorophyta
+Bivalvia 1,62,Bivalvia,BIV1,BIV1,,,Animalia,Mollusca,Bivalvia,,,,Bivalvia
+Dynamenella sheareri,1,Dynamenella sheareri,DYSH,DYSH,Dynamenella,sheareri,Animalia,Arthropoda,Malacostraca,Isopoda,Sphaeromatidae,"Hatch, 1947",Isopoda
+Pentidotea wosnesenskii,64,Pentidotea wosnesenskii,PEWO,PEWO,Pentidotea,wosnesenskii,Animalia,Arthropoda,Malacostraca,Isopoda,Idoteidae,"Brandt, 1851",Isopoda
+Polynoidae,65,Polynoidae,POLN,POLN,,,Animalia,Annelida,Polychaeta,Phyllodocida,Polynoidae,"Kinberg, 1856",Polychaeta
+Halobisium occidentale,66,Halobisium occidentale,HAOC,HAOC,Halobisium,occidentale,Animalia,Arthropoda,Euchelicerata,Pseudoscorpiones,Neobisiidae,"Beier, 1931",Arachnida
+Terebellidae,67,Terebellidae,TERE,TERE,,,Animalia,Annelida,Polychaeta,Terebellida,Terebellidae,"Johnston, 1846",Polychaeta
+Sabellidae,68,Sabellidae,SABE,SABE,,,Animalia,Annelida,Polychaeta,Sabellida,Sabellidae,"Latreille, 1825",Polychaeta
+Tegula funebralis,69,Tegula funebralis,TEFU,TEFU,Tegula,funebralis,Animalia,Mollusca,Gastropoda,Trochida,Tegulidae,"A. Adams, 1855",Gastropoda
+Lacuna vincta,70,Lacuna vincta,LAVI,LAVI,Lacuna,vincta,Animalia,Mollusca,Gastropoda,Littorinimorpha,Littorinidae,"Montagu, 1803",Gastropoda
