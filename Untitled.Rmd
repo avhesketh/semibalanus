@@ -1,0 +1,36 @@
+---
+title: "references"
+output:
+  word_document: default
+  html_document: default
+bibliography: semibalanus.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+library()
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+[@yang_behavioural_2020; @amstutz_facing_2021; @babcock_recurrent_2020; @barbosa_linking_2021; @barnes_use_nodate; @brown_toward_2004; @bulleri_facilitation_2016; @buschbaum_mytilid_2009; @arias-ortiz_marine_2018\]\[@connell_diversity_1978; @de_boeck_legacy_2018; @denny_prediction_2009; @denny_survival_2018; @dillon_global_2010; @genin_rapid_2020; @gilman_body_2015; @gosselin_distribution_1995; @hancock_effects_2001; @harley_climate_2011; @harley_non-linear_2011\]\[@harley_tidal_2008; @hayford_foraging_2015; @helmuth_intertidal_1998; @helmuth_mosaic_2006; @hesketh_ecological_2021]
+
+[@harley_tidal_2008; @hayford_foraging_2015; @helmuth_intertidal_1998; @helmuth_mosaic_2006; @hesketh_ecological_2021; @hobday_hierarchical_2016; @ianson_vulnerability_2016; @ignacio_heat_2021; @jurgens_facilitation_nodate; @jurgens_physical_2018; @kreyling_stochastic_2011; @lascala-gruenewald_long-term_2020; @leonard_latitudinal_2000; @levine_climate-driven_1999; @li_microhabitat_2021; @liversage_overlooked_2020; @maxwell_conservation_2019; @mcafee_mechanisms_2019; @miller_role_2009; @morelissen_effects_2007; @morley_physiological_2019; @noauthor_frontiers_nodate; @pansch_heat_2018; @pardal-souza_shading_2017; @perkins_measurement_2013; @perkins-kirkpatrick_increasing_2020; @reimer_succession_nodate; @riemer_body_2018; @roman_heatwaves_2020; @scanes_heatwaves_2020; @scrosati_community-level_2017; @seabra_side_2011; @seifert_extreme_2015; @siegle_prior_2018; @smithson_better_2006; @sorte_impacts_2010; @straub_resistance_2019; @tituskin_species-specific_nodate; @tomanek_physiological_2002; @umanzor_intertidal_2017; @uya_facilitation_2020; @vasseur_increased_2014; @wang_spatial_2020; @wernberg_extreme_2013; @yang_behavioural_2020]
