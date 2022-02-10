@@ -106,92 +106,69 @@ hot_low_SI <- read_csv("./raw_data/hot_hour_low_hour/SI_tides_summ06.csv") %>%
 
 # 1: BP
 
-mod.bp <- lm(hottest_hour ~ low_time, data = hot_low_BP)
+mod.bp <- lm(hottest_hour ~ poly(low_time,2, raw =T), data = hot_low_BP)
 summary(mod.bp)
+plot(mod.bp)
 
-# hottest_hour = 0.6063*low_tide + 6.7109, R2 = 0.9045
+# hottest_hour = 8.7439*low_tide - 1.219*low_tide^2 + 13.56, R2 = 0.9194
 
 # 2: SA
 
-mod.sa <- lm(hottest_hour ~ low_time, data = hot_low_SA)
+mod.sa <- lm(hottest_hour ~ poly(low_time,2, raw=T), data = hot_low_SA)
 summary(mod.sa)
+plot(mod.sa)
 
-# hottest_hour = 0.52458*low_tide + 7.52997, R2 = 0.6549
+# hottest_hour = 11.3419*low_tide - 3.7188*low_tide^2 + 13.3726, R2 = 0.722
 
 # 3: TE
 
-mod.si <- lm(hottest_hour ~ low_time, data = hot_low_SI)
+mod.si <- lm(hottest_hour ~ poly(low_time,2, raw = T), data = hot_low_SI)
 summary(mod.si)
+plot(mod.si)
 
-# hottest_hour = 0.19695*low_tide + 12.18867, R2 = 0.4358
+# hottest_hour = 3.1902*low_tide - 1.0388*low_tide^2 + 14.56, R2 = 0.4632
 
 
 ## plot of regressions with annotated equations
 
 all.regressions <- hot_low_SI %>% full_join(hot_low_BP) %>% full_join(hot_low_SA) %>% 
   mutate(site = factor(site, levels = c("Bluestone Point","Sahsima","Saddlebag Island")),
-         eqn = case_when(site == "Bluestone Point" ~ "y = 0.6063x + 6.7109",
-                         site == "Sahsima" ~ "y =  0.5246x + 7.5300",
-                         site == "Saddlebag Island"~ "y = 0.1970x + 12.1887"),
-         r2 = case_when(site == "Bluestone Point" ~ 0.9045,
-                        site == "Sahsima" ~ 0.6549,
-                        site == "Saddlebag Island"~ 0.4358))
+         eqn = case_when(site == "Bluestone Point" ~ "y = 1.239x -0.028x^2 + 3.375",
+                         site == "Sahsima" ~ "y = 1.843x - 0.060x^2 + 0.786",
+                         site == "Saddlebag Island"~ "y = 0.815x - 0.026x^2 + 8.847"),
+         r2 = case_when(site == "Bluestone Point" ~ 0.9194,
+                        site == "Sahsima" ~ 0.7220,
+                        site == "Saddlebag Island"~ 0.4632))
                          
 
 low_tide_hot_hour <- ggplot(aes(x = low_time, y = hottest_hour, col = site), data = all.regressions) +
   geom_point()+
   facet_wrap(~ site) +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2)) +
   theme_bw() +
   theme(legend.position = "none", axis.title = element_text(size = 14),
         axis.text = element_text(size = 12), strip.text = element_text(size = 14)) +
-  geom_text(aes(x = 11.25, y = 17.8, label = eqn), col = "black", size = 5) +
+  geom_text(aes(x = 11.25, y = 17.8, label = eqn), col = "black", size = 4) +
   geom_text(aes(x = 11.5, y = 10.05), label = expression(R^2~"="), col = "black", size = 5) +
   geom_text(aes(x = 15, y = 10, label = r2), col = "black", size = 5) +
   scale_color_manual(values = c("steelblue","#CEAA07","#6E8243")) +
   labs(y = "Hour of maximum on-shore temperature", x = "Hour of lowest low tide")
 low_tide_hot_hour
 
-#ggsave(filename = "../outputs/S1Fig3.png", dpi = 1200, low_tide_hot_hour, scale = 1)
+#ggsave(filename = "./outputs/S1Fig3.png", dpi = 1200, low_tide_hot_hour, scale = 1)
 
 ################################################################################
 
-# Clean tide data to find the time of the low tide
-
-# tide data from different sites are formatted slightly differently
-
-# Clover Point
-tides_cp <- read_delim("./raw_data/tides/tides_CP.csv", 
-                       col_names = c("date","junk","time","tz","tide_height_m")) %>%
-  mutate(hour = hour(time), site_code = "CP") %>% select(-junk, -tz, -time)
-
-# Tower Point
-tides_tp <- read_delim("./raw_data/tides/tides_TP.csv", 
-                       col_names = c("date","junk","time","tz","tide_height_m")) %>%
-  mutate(hour = hour(time), site_code = "TP") %>% select(-junk, -tz, -time) 
-
-# Rest of sites all in one datasheet
-tides_rest <- read_csv("./raw_data/tides/tides_other_sites.csv") %>% 
-  pivot_longer(names_to = "hour", values_to = "tide_height_m", cols = 3:length(.)) %>%
-  mutate(hour = as.integer(hour))
-
-tides_full <- rbind(rbind(tides_cp, tides_tp),tides_rest)
-
-#write_csv(tides_full, "./clean_data/SBHW_Tides.csv")
-
 ## Now need to find the time of low tide on 28 June 2021 for each site.
 
-tides <- read_csv("./clean_data/SBHW_Tides.csv") %>% group_by(date, site_code) %>% 
-  mutate(lowest_tide = min(tide_height_m)) %>% 
-  filter(date == "2021-06-28" & lowest_tide == tide_height_m) %>% 
-  group_by(site_code) %>% 
-  summarize(low_time = mean(hour)) %>% 
-  mutate(site_code = str_replace_all(site_code, c("CP" = "SA")))
+tides <- read_csv("./raw_data/hot_hour_low_hour/low_tide_jun28.csv") %>%
+  separate(low_tide, into = c("hours","minutes", "seconds"), sep = ":", remove = F) %>%
+  mutate(low_tide = as.numeric(hours) + as.numeric(minutes)/60) %>% select(-hours,-minutes)
 
 hot_hour_estimate <- tides %>% # use closest reference site's regression to compute hottest hour @ each site surveyed
-  mutate(hot_hour = case_when(site_code %in% c("WBS","WBN","BO","PP", "KE","PL") ~ (low_time*0.6063+6.7109),
-                              site_code %in% c("SP","FC","SA","TP","SN", "BB") ~ (low_time*0.52458 + 7.52997),
-                              site_code %in% c("TS","TE","TK","CE") ~ (low_time*0.1970 + 12.1887))) %>% 
+  mutate(hot_hour = case_when(site_code %in% c("WBS","WBN","BO","PP", "KE","PL") ~ (1.23916*low_tide - 0.02806*(low_tide^2) + 3.37509),
+                              site_code %in% c("SP","FC","SA","TP","SN", "BB") ~ (1.84323*low_tide - 0.05978*(low_tide^2) + 0.78625),
+                              site_code %in% c("TS","TE","TK","CE") ~ (0.81526*low_tide - 0.02639*(low_tide^2) + 8.84688))) %>% 
   mutate(minutes = as.numeric(substr(as.character(hot_hour), 3,8))*60)
 
 # use these time values + lat/long to derive solar elevation 
@@ -201,7 +178,7 @@ hot_hour_estimate <- tides %>% # use closest reference site's regression to comp
 
 # Supplemental figure to show magnitude of heat wave
 
-hourly.temp.yyj <- read_csv("../raw_data/hourly_temps_figure/hourly_temp_vicairport.csv", 
+hourly.temp.yyj <- read_csv("./raw_data/hourly_temps_figure/hourly_temp_vicairport.csv", 
                             col_select = c(5:8, 10, 14)) %>% 
   filter(Day <= 30 & Day >=23) %>% rename(date_time = 1, temp = 5, humidity = 6) %>% 
   mutate(date_time = ymd_hms(date_time))
@@ -217,11 +194,13 @@ yyj.panel <- ggplot(data = hourly.temp.yyj, aes(x = date_time)) +
   theme_classic() + theme(axis.title = element_text(size = 14), 
                           axis.text = element_text(size = 12))
 
-hourly.temp.bellabella <-read_csv("../raw_data/hourly_temps_figure/temp_bellabella_june.csv", 
-                                  col_select = c(5:8, 10, 14)) %>% filter(Day <= 30 & Day >=23) %>% 
-  rename(date_time = 1, temp = 5, humidity = 6) %>% mutate(date_time = ymd_hms(date_time))
+hourly.temp.calvert <-read_csv("./raw_data/hourly_temps_figure/hourly_temp_pruth.csv") %>% 
+  filter(year == 2021 & month == "Jun") %>% 
+  mutate(date_time = ymd_hm(measurementTime)) %>% 
+  select(date_time, AirTemp_Avg) %>% 
+  rename(temp = AirTemp_Avg)
 
-bb.panel <- ggplot(data = hourly.temp.bellabella, aes(x = date_time)) + 
+calvert.panel <- ggplot(data = hourly.temp.calvert, aes(x = date_time)) + 
   geom_line(aes(y = temp), col = "olivedrab4", lwd = 1) + 
   annotate(geom = "rect", xmin = ymd_hms("2021-06-23 00:00:00"), 
            xmax = ymd_hms("2021-06-30 23:00:00"), ymin = 9.9, ymax = 19.0, alpha = 0.3) + 
@@ -231,6 +210,6 @@ bb.panel <- ggplot(data = hourly.temp.bellabella, aes(x = date_time)) +
   theme_classic() + 
   theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12))
 
-S1Fig1 <- bb.panel / yyj.panel + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(face = "bold"))
+S1Fig1 <- calvert.panel / yyj.panel + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(face = "bold"))
 
-#ggsave(S1Fig1, filename = "../outputs/S1Fig1.png", dpi = 1200, width = 7, height = 5, units = "in" )
+#ggsave(S1Fig1, filename = "./outputs/S1Fig1.png", dpi = 1200, width = 7, height = 5, units = "in" )

@@ -7,6 +7,11 @@ pkgs <- c("tidyverse", "lubridate", "car", "vegan", "plotrix", "patchwork",
 lapply(pkgs, library, character.only = T)
 rm(pkgs)
 
+plot_theme <- theme_bw + theme(axis.title = element_text(size = 14),
+      axis.text = element_text(size = 12),
+      legend.title = element_text(size = 14),
+      legend.text = element_text(size = 12))
+
 # read in generally useful data for later analyses
 plot.info <- read_csv("../raw_data/shade/SBHW_SHADE_plot_info.csv") # plot-level details (treatments associated with plot#)
 taxa <- read_csv("./raw_data/SBHW_taxonomic_20220105.csv") # taxonomic info (species codes etc.)
@@ -68,21 +73,37 @@ fig5b <- ggplot(data = temp.hw, aes(x = date_time, y = mean.temp, col = treatmen
   theme_bw() + 
   theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), 
         legend.text = element_text(size = 12), legend.title = element_text(size = 14)) 
-
 #+ geom_ribbon(aes(ymax = mean.temp + se.temp, ymin = mean.temp - se.temp), alpha = 0.3, color = NA) 
+#+ 
+# looking at differences in mean temperatures between trt during the heat dome
+trt.diff.hd <- temp.lowtide %>% separate(date_time, c("date", "time"), " ", remove  = F) %>% 
+  filter(date >="2021-06-25" & date <= "2021-06-29") %>% separate(treatment, into = c("shade","removal"),1) %>% 
+  group_by(shade) %>% summarize(av_temp = mean(temperature_C), se_temp = std.error(temperature_C))
+
+trt.diff.nhd <- temp.lowtide %>% separate(date_time, c("date", "time"), " ", remove  = F) %>% 
+  filter(date < "2021-06-25" | date > "2021-06-29") %>% separate(treatment, into = c("shade","removal"),1) %>% 
+  group_by(shade) %>% summarize(av_temp = mean(temperature_C), se_temp = std.error(temperature_C))
+
+trt.diff.whole.summer <- temp.lowtide %>% separate(date_time, c("date", "time"), " ", remove  = F) %>% 
+  separate(treatment, into = c("shade","removal"),1) %>% 
+  group_by(shade) %>% summarize(av_temp = mean(temperature_C), se_temp = std.error(temperature_C))
+
+trt.diff.max.hd <- temp.lowtide %>% separate(date_time, c("date", "time"), " ", remove  = F) %>% 
+  filter(date >="2021-06-25" & date <= "2021-06-29") %>% separate(treatment, into = c("shade","removal"),1) %>% 
+  group_by(date, shade) %>% summarize(max = max(temperature_C)) %>% group_by(shade) %>% 
+  summarize(mdmax = mean(max), semdmax = std.error(max))
+
+trt.diff.max.nhd <- temp.lowtide %>% separate(date_time, c("date", "time"), " ", remove  = F) %>% 
+  filter(date < "2021-06-25" | date > "2021-06-29") %>% separate(treatment, into = c("shade","removal"),1) %>% 
+  group_by(date, shade) %>% summarize(max = max(temperature_C)) %>% group_by(shade) %>% 
+  summarize(mdmax = mean(max), semdmax = std.error(max))
+
+
 
 # And finally, a plot showing the differences in mean daily maximum temp between treatments
 
-temp.summary2 <- temp.sep %>% group_by(treatment, date, block) %>% 
-  summarize(mdmax_temp = max(temperature_C)) %>% 
-  mutate(trt_long = case_when(treatment == "SI" ~ "shaded intact",
-                              treatment == "UI" ~ "unshaded intact", 
-                              treatment == "SR" ~ "shaded removal", 
-                              treatment == "UR" ~ "unshaded removal")) %>% 
-  mutate(shading = substr(treatment,1,1), removal = substr(treatment,2,2))
-
-S1F4 <- ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50), 
-               aes(x = treatment, y = mdmax_temp, col = treatment, fill = treatment)) + 
+S1F4 <- ggplot(data = temp.summary,
+               aes(x = treatment, y = mean.max.temp, col = treatment, fill = treatment)) + 
   geom_boxplot(alpha = 0.4, outlier.color = NA) + 
   scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + 
   scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + 
@@ -93,7 +114,7 @@ S1F4 <- ggplot(data = temp.summary2 %>% filter(mdmax_temp < 50),
         legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + 
   geom_jitter(width = 0.2, alpha = 0.2)
 
-#ggsave(S1F4, filename = "../outputs/S1Fig5.png", dpi = 1200, width = 7, height = 5, units = "in")
+#ggsave(S1F4, filename = "./outputs/S1Fig5.png", dpi = 1200, width = 7, height = 5, units = "in")
 
 
 # Create a model to test treatment differences in max daily temp between treatment
@@ -361,11 +382,9 @@ S1Fig6B <- ggplot(algal_cover, aes(x = treatment_code, y = cover*100,
                                    fill = treatment_code, col = treatment_code)) + 
   geom_boxplot(alpha = 0.4, outlier.color = NA) + geom_jitter(alpha = 0.3, width = 0.2) +
   scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + 
-  scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2"))+ 
-  theme_classic() + theme(axis.title = element_text(size = 14), 
-                          axis.text = element_text(size = 12), 
-                          legend.title = element_text(size = 14), 
-                          legend.text = element_text(size = 12)) + 
+  scale_fill_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2"))+
+  plot_theme+ 
+  theme_classic() +
   labs(x = "Treatment", y = "Algal cover (%)", color = "Treatment", fill = "Treatment")
 
 # assemble multi-panel figures
@@ -415,7 +434,7 @@ infauna_bray$stress # < 0.2, so stick with 2 dimensions
 # (everything with < 5 individuals across all samples)
 abund.spec <- as.data.frame(colSums(infauna_matrix)) %>% 
   rename(total = 1) %>% filter(total >= 5) %>% rownames()
-infauna_abund <- infauna_matrix[,abund.spec]
+infauna_abund <- infauna_matrix[,abund.spec] # removes 10 spp
 
 infauna_bray_abund <- invisible(metaMDS(infauna_abund, k=2, try = 999, autotransform = T))
 infauna_bray_abund$stress # < 0.2, so stick with 2 dimensions
@@ -434,7 +453,9 @@ anova(infauna.beta)
 data.scores <- as.data.frame(scores(infauna_bray))
 data.scores$treatment <- infauna_factors$treatment
 
-data.scores <- data.scores %>% group_by(treatment) %>% mutate(mean.x = mean(NMDS1), mean.y = mean(NMDS2)) %>% ungroup() %>% mutate(treatment = case_when(treatment == "1" ~ "Unshaded",treatment == "2" ~ "Shaded"))
+data.scores <- data.scores %>% group_by(treatment) %>% 
+  mutate(mean.x = mean(NMDS1), mean.y = mean(NMDS2)) %>% ungroup() %>%
+  mutate(treatment = case_when(treatment == "1" ~ "Unshaded",treatment == "2" ~ "Shaded"))
 
 species.scores <- as.data.frame(scores(infauna_bray, "species"))
 species.scores$species <- rownames(species.scores) 
@@ -464,15 +485,11 @@ infauna.ordination.sa <- ggplot() +
   geom_text_repel(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size = 4, alpha=0.7,
                   max.overlaps = 500, box.padding=0.05, min.segment.length = 5) +
   coord_equal() +
-  theme_bw() +
   scale_color_manual(values = c("skyblue4","tomato4")) +
   labs(color = "Treatment", x = "Axis 1", y = "Axis 2") +
-  theme(axis.title = element_text(size = 14),
-        axis.text = element_text(size = 12),
-        legend.title = element_text(size = 14),
-        legend.text = element_text(size = 12)) +
+  plot_theme +
   annotate("text", x = 0.75, y = 0.95, label = "Stress = 0.1739", size = 5)
-
+infauna.ordination.sa
 #ggsave(filename = "../outputs/Fig6.png", infauna.ordination.sa, dpi = 1200, width = 3.5, height = 2.5, units = "in", scale = 2)
 
 # PERMANOVA
@@ -525,10 +542,7 @@ infauna.ordination.sa.abund <- ggplot() +
   theme_bw() +
   scale_color_manual(values = c("skyblue4","tomato4")) +
   labs(color = "Treatment", x = "Axis 1", y = "Axis 2") +
-  theme(axis.title = element_text(size = 14),
-        axis.text = element_text(size = 12),
-        legend.title = element_text(size = 14),
-        legend.text = element_text(size = 12)) +
+  
   annotate("text", x = 0.75, y = -0.4, label = "Stress = 0.1770", size = 5)
 infauna.ordination.sa.abund
 
@@ -540,3 +554,93 @@ dist <- vegdist(infauna_abund, "bray")
 infauna.beta <- betadisper(dist, infauna_factors$treatment, bias.adjust = T)
 anova(infauna.beta)
 
+### Question 6: Did infaunal diversity change depending on barnacle mortality
+
+mort.community <- infauna_sahsima <- read_csv("./raw_data/shade/SBHW_SHADE_infauna.csv") %>% 
+  rename(plot_number = plot_id) %>% 
+  pivot_longer(cols = -plot_number, names_to = "original_code", values_to = "abund") %>% 
+  left_join(species.repair) %>% select(-original_code) %>% 
+  group_by(plot_number, final_code) %>% summarize(abund = sum(abund)) %>% 
+  pivot_wider(id_cols = plot_number, names_from = final_code, values_from = abund) %>% 
+  left_join(plot.info) %>% select( -treatment_final_numeric, -shore_level) %>% 
+  rename(treatment = treatment_original_numeric) %>% ungroup() %>% full_join(barnacle.mort) %>% 
+  relocate(c(treatment, block, prop_mort), .before = "AMSP") %>% 
+  dplyr::select(-plot_number, -number_live, -number_dead)
+
+mort.matrix <- mort.community %>% dplyr::select(-treatment, -block, -prop_mort) %>% as.matrix
+
+mort.comm.factors <- mort.community %>% dplyr::select(treatment,block,prop_mort)
+
+H.inf <- diversity(mort.matrix)
+rich.inf <- specnumber(mort.matrix)
+abund.inf <- rowSums(mort.matrix)
+
+mort.comm <- mort.comm.factors %>% cbind(H.inf) %>%
+  cbind(rich.inf) %>% cbind(abund.inf) %>% 
+  na.omit() %>% 
+  mutate(treatment = as.factor(case_when(treatment == 1 ~ "Unshaded", 
+                                         treatment == 2 ~ "Shaded")), 
+         block = as.factor(block)) %>% filter(treatment == "Unshaded")
+
+# just mortality in unshaded treatment (greatest range)
+library(MASS)
+
+mort.abund.mod <- glm.nb(abund.inf ~ prop_mort, data = mort.comm %>% 
+                           filter(treatment == "Unshaded"), link = log) 
+# using negative binomial due to overdispersion
+
+plot(mort.abund.mod)
+summary(mort.abund.mod)
+Anova(mort.abund.mod)
+
+abund.pred <- predict(mort.abund.mod, mort.comm, type = "response", se.fit = T) 
+mort.comm <- cbind(mort.comm, abund.pred) %>% rename(abund.pred = fit, abund.se = se.fit)
+mort.abund <- ggplot(mort.comm %>% 
+                       filter(treatment == "Unshaded"), 
+                     aes(x = prop_mort*100, y = abund.inf)) + 
+  geom_point(size =3, col = "tomato4") + 
+  plot_theme + 
+  theme_classic()+
+  labs(x = expression(italic("S. cariosus")~"mortality (%)"),
+       y = "Abundance") + 
+  geom_smooth(aes(y = abund.pred), method = "lm", col = "black", se = F) +
+  geom_ribbon(aes(ymax = abund.pred + abund.se, ymin = abund.pred-abund.se), 
+              alpha = 0.2)
+
+mort.H.mod <- lm(H.inf ~ prop_mort, data = mort.comm)
+plot(mort.H.mod)
+summary(mort.H.mod)
+anova(mort.H.mod)
+
+H.pred <- predict(mort.H.mod, mort.comm, type = "response", se.fit = T) 
+mort.comm <- mort.comm %>% dplyr::select(-residual.scale) %>% cbind(H.pred) %>% rename(H.pred = fit, H.se = se.fit)
+mort.H <- ggplot(mort.comm, aes(x = prop_mort*100, y = H.inf)) + 
+  geom_point(size = 3, col = "tomato4") + plot_theme + theme_classic() +
+  labs(x = expression(italic("S. cariosus")~"mortality (%)"), 
+       y = "Diversity") + 
+  geom_smooth(aes(y = H.pred), method = "lm", col = "black", se = F) +
+  geom_ribbon(aes(ymax = H.pred + H.se, ymin = H.pred-H.se), col = NA, 
+              alpha = 0.2)
+
+mort.rich.mod <- glm(rich.inf ~ prop_mort, data = mort.comm, family = "poisson")
+plot(simulateResiduals(mort.rich.mod))
+summary(mort.rich.mod)
+Anova(mort.rich.mod)
+
+rich.pred <- predict(mort.rich.mod, mort.comm, type = "response", se.fit = T) 
+mort.comm <- mort.comm %>% dplyr::select(-residual.scale, -df) %>% cbind(rich.pred) %>% rename(rich.pred = fit, rich.se = se.fit)
+mort.rich <- ggplot(mort.comm, aes(x = prop_mort*100, y = rich.inf)) +
+  geom_point(size = 3, col = "tomato4") + 
+  plot_theme +
+  theme_classic() +
+  labs(x = expression(italic("S. cariosus")~"mortality (%)"), 
+       y = "Richness")  + 
+  geom_smooth(aes(y = rich.pred), method = "lm", col = "black", se = F) + 
+  geom_ribbon(aes(ymax = rich.pred + rich.se, ymin = rich.pred-rich.se), 
+              col = NA, alpha = 0.2)
+
+S1Fig7 <- mort.abund/mort.rich/mort.H + plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(face = "bold"))
+S1Fig7
+ggsave("./outputs/S1Fig7.png", S1Fig7, dpi = 1200, width = 5, height = 7,
+       units = "in")

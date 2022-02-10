@@ -1,18 +1,18 @@
 ﻿site_name,alternative_name,site_code,latitude_degrees,longitude_degrees,mortality,angles,infauna,mortality_survey,angles_survey,substratum,orientation_degrees,aspect,solar_elevation,solar_azimuth
-ṮEḴTEḴSEN,"East Point, Saturna, Island",TK,48.78487,-123.04444,1,,1,2021-08-06,,bedrock,160,SE,57.56,227.16
-ȾESNO¸EṈ¸,"Ruckle Park, Salt Spring Island",TE,48.7716,-123.36654,1,1,1,2021-08-05,2021-08-05,bedrock,113,E,57.73,226.71
-ŚNEU¸EU¸EĆ,Arbutus Cove/Hollydene Point,SN,48.4754,-123.2992,1,,1,2021-08-08,,bedrock,35,NE,60.17,219.38
-"Baynes Beach, Victoria",,BB,48.45346,-123.26498,1,,,2021-07-25,,bedrock,96,E,60.17,219.46
-"Funnel Cove, Victoria",,FC,48.44238,-123.29055,1,1,,2021-08-08,2021-08-08,bedrock,119,SE,61.75,212.57
-"Clover Point, Victoria",,CP,48.40389,-123.35,1,,,2021-07-20,,bedrock,266,W,61.8,212.51
-"Saxe Point, Esquimalt",,SP,48.42306,-123.41889,1,1,1,2021-07-19,2021-08-08,bedrock,211,SW,63.09,204.91
-"Tower Point, Metchosin",,TP,48.3827,-123.50703,1,,1,2021-08-09,,bedrock,119,SE,64.07,197.03
-ke:?ioadl,Fishboat Bay/Point No Point,KE,48.39263,-123.97428,1,,1,2021-08-09,,boulders_bedrock,152,SE,64.48,191.63
-Bo:ʔapiʔis,Port Renfrew,BO,48.55447,-124.42127,1,,1,2021-08-09,,pilings_bedrock,357,N,64.38,190.62
-"Thousand-and-One Steps, White Rock",,TS,49.03122,-122.87536,,1,,,2021-07-11,boulders,248,W,55.82,231.33
-Sahsima,Chinese Cemetery,SA,48.40578,-123.32331,,1,1,,2021-08-21,bedrock,140,SW,61.79,212.55
-ĆELḰINES,Moses Point,CE,48.69115,-123.48415,1,,,2021-08-08,,bedrock,20,NE,57.84,207.42
-"West Beach, Calvert Island",,WBS,51.65247,-128.14125,1,,1,2021-08-25,,bedrock,312,NW,60.97,165.22
-"Prasiola Point, Bamfield",,PP,48.81722,-125.16947,,,1,,,bedrock,215,NW,63.34,160.2
-"Pruth Lagoon, Calvert Island",,PL,51.65585,-128.1302,1,,,2021-08-22,,boulders_bedrock,233,W,60.97,165.24
-"West Beach, Calvert Island",,WBN,51.65733,-128.14708,,1,,,2021-08-21,bedrock,153,S,60.97,165.21
+ṮEḴTEḴSEN,"East Point, Saturna, Island",TK,48.78487,-123.04444,1,,1,2021-08-06,,bedrock,160,SE,56.19,231.05
+ȾESNO¸EṈ¸,"Ruckle Park, Salt Spring Island",TE,48.7716,-123.36654,1,1,1,2021-08-05,2021-08-05,bedrock,113,E,56.62,229.93
+ŚNEU¸EU¸EĆ,Arbutus Cove/Hollydene Point,SN,48.4754,-123.2992,1,,1,2021-08-08,,bedrock,35,NE,59.07,223.38
+"Baynes Beach, Victoria",,BB,48.45346,-123.26498,1,,,2021-07-25,,bedrock,96,E,59.07,223.45
+"Funnel Cove, Victoria",,FC,48.44238,-123.29055,1,1,,2021-08-08,2021-08-08,bedrock,119,SE,59.87,220.66
+"Clover Point, Victoria",,CP,48.40389,-123.35,1,,,2021-07-20,,bedrock,266,W,60.76,217.29
+"Saxe Point, Esquimalt",,SP,48.42306,-123.41889,1,1,1,2021-07-19,2021-08-08,bedrock,211,SW,60.77,217.16
+"Tower Point, Metchosin",,TP,48.3827,-123.50703,1,,1,2021-08-09,,bedrock,119,SE,61.33,214.9
+ke:?ioadl,Fishboat Bay/Point No Point,KE,48.39263,-123.97428,1,,1,2021-08-10,,boulders_bedrock,152,SE,64.34,193.73
+Bo:ʔapiʔis,Port Renfrew,BO,48.55447,-124.42127,1,,1,2021-08-10,,pilings_bedrock,357,N,64.68,179.14
+"Thousand-and-One Steps, White Rock",,TS,49.03122,-122.87536,,1,,,2021-07-11,boulders,248,W,55.95,230.99
+Sahsima,Chinese Cemetery,SA,48.40578,-123.32331,,1,1,,2021-08-21,bedrock,140,SW,60.75,217.34
+ĆELḰINES,Moses Point,CE,48.69115,-123.48415,1,,,2021-08-08,,bedrock,20,NE,56.67,230.03
+"West Beach, Calvert Island",,WBS,51.65247,-128.14125,1,,1,2021-08-25,,bedrock,312,NW,61.46,173.27
+"Prasiola Point, Bamfield",,PP,48.81722,-125.16947,,,1,,,bedrock,215,NW,64.12,169.39
+"Pruth Lagoon, Calvert Island",,PL,51.65585,-128.1302,1,,,2021-08-22,,boulders_bedrock,233,W,61.46,173.29
+"West Beach, Calvert Island",,WBN,51.65733,-128.14708,,1,,,2021-08-21,bedrock,153,S,61.46,173.26

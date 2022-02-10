@@ -3,7 +3,7 @@
 ## January 2021
 
 pkgs <- c("tidyverse", "lubridate", "car", "plotrix", "patchwork", "glmmTMB",
-          "DHARMa", "lme4", "wesanderson")
+          "DHARMa", "lme4", "wesanderson", "ggeffects")
 lapply(pkgs, library, character.only = T)
 rm(pkgs)
 
@@ -110,18 +110,18 @@ mort.plot <- ggplot(data = mort.model.df, aes(col = degrees_from_azimuth,
   geom_jitter(size = 2, width = 0.2, alpha = 0.8) + 
   scale_color_gradientn(colors = pal, trans="reverse") + 
   theme_classic() + 
-  labs(y = "Mortality (%)", col = "Aspect (º)", x = "Mean maximum daily temperature (ºC)") + 
+  labs(y = "Mortality (%)", col = "Aspect (º)", x = "Mean maximum daily air temperature (ºC)") + 
   theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), 
         legend.text = element_text(size = 12), legend.title = element_text(size = 14))
 
-#ggsave(filename = "../outputs/Fig3.png", dpi = 1200, mort.plot, height = 2.5, width = 3.5, units = "in", scale = 1.5)
+#ggsave(filename = "./outputs/Fig3.png", dpi = 1200, mort.plot, height = 2.5, width = 3.5, units = "in", scale = 1.5)
 
 ################################################################################
 
 # Model 2: angle of solar incidence specifically
 
 angle.data <- read_csv("./raw_data/mortality/SBHW_MORT_angles.csv")
-
+View(angle.data)
 site.info <- read_csv("./clean_data/SBHW_SiteInformation.csv") %>% 
   select(site_code,angles,solar_elevation, solar_azimuth) %>% na.omit() %>% select(-angles)
 
@@ -185,5 +185,5 @@ angles.plot <- ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = s
   geom_line(data = model.pred, aes(x = x, y = predicted)) + 
   geom_smooth(method = "glm", method.args = list(family = "binomial"), aes(x = angle, y = prop_mort), col = "black")
 
-#ggsave(angles.plot, filename = "../outputs/Fig4.png", dpi = 1200, height = 2.5, width = 3.5, units = "in", scale = 1.5)
+#ggsave(angles.plot, filename = "./outputs/Fig4.png", dpi = 1200, height = 2.5, width = 3.5, units = "in", scale = 1.5)
 

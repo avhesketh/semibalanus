@@ -13,7 +13,8 @@ rm(pkgs)
 # load relevant data: collection info (associates number of collection with site code and collection date)
 collection.info <- read_csv("./raw_data/infauna/SBHW_INFAUNA_collections.csv")
 # load taxonomic data: contains information about taxonomic groupings and authorities, species codes, etc.
-taxonomic.info <- read_csv("./raw_data/SBHW_taxonomic_20220105.csv") %>%  select(original_code, final_code, coarse_grouping)
+taxonomic.info <- read_csv("./raw_data/SBHW_taxonomic_20220105.csv") %>%  
+  select(original_code, final_code, coarse_grouping)
 # will need to read all the files for all collections .. list all the file names in this directory for reading in
 sample.files <- list.files("./raw_data/infauna/community_data/")
 
@@ -161,7 +162,6 @@ infauna.div.summary <- infauna.diversity %>%
   summarize(mean.rich = mean(richness), se.rich = std.error(richness), # summarize for plotting
             mean.H = mean(Shannon_diversity), se.H = std.error(Shannon_diversity)) %>% 
   mutate(site_code = factor(site_code, levels = site.levels)) # arrange from outer -> inner coast
-
 
 # get colours matching map palette
 color.col <- arrange(infauna.diversity, by_group = site_code) %>% ungroup() %>%
