@@ -63,15 +63,20 @@ temp.clean <- temp.df.clean.aug %>%  full_join(temp.df.clean.july) %>%
 
 #write_csv(temp.clean, "./clean_data/SBHW_TempSahsima.csv")
 
+# Look only at temperatures within bare plots
 ibutton_SA_2021 <- read_csv("./clean_data/SBHW_TempSahsima.csv") %>% 
-  filter(month(date_time) > 5 & month(date_time) < 9) %>% 
-  filter(treatment == "UI" | treatment == "UR") %>% 
+  filter(month(date_time) > 5 & month(date_time) < 9) %>% # retain summer tides
+  filter(treatment == "UI" | treatment == "UR") %>% # retain bare shores
   mutate(date = date(date_time), hour = hour(date_time)) %>% 
-  group_by(date) %>% mutate(max_temp = max(temperature_C)) %>% ungroup() %>% 
-  filter(temperature_C == max_temp) %>% select(date, hour, max_temp) %>% 
+  group_by(date) %>% mutate(max_temp = max(temperature_C)) %>%  # calculate when shore temp = maximum
+  ungroup() %>% 
+  filter(temperature_C == max_temp) %>% select(date, hour, max_temp) %>%
+  # retain only times when temp = max (sometimes multiple measurements)
   rename(hottest_hour = hour) %>% group_by(date, max_temp) %>% 
-  mutate(hottest_hour = mean(hottest_hour))
+  mutate(hottest_hour = mean(hottest_hour)) # find the average hottest hour
 
+# read in tide data for the site and clean up
+# find the lowest tide of each day
 SA_tides <- read_delim("./raw_data/hot_hour_low_hour/SA_tides_summ21.csv",
                        col_names = c("date", "time", "na", "height_m","type"),
                        delim = "  ") %>% 
@@ -82,13 +87,16 @@ SA_tides <- read_delim("./raw_data/hot_hour_low_hour/SA_tides_summ21.csv",
   mutate(low_time = hour+minutes) %>% select(date, low_time, height_m) %>% 
   rename(low_tide = height_m) %>% 
   group_by(date) %>% mutate(lowest_tide = min(low_tide)) %>% ungroup() %>% 
-  filter(low_tide == lowest_tide) 
+  filter(low_tide == lowest_tide)
 
+# join tide and temp data together
 hot_low_SA <- ibutton_SA_2021 %>% full_join(SA_tides) %>% unique() %>% na.omit() %>% 
   filter(date >= "2021-06-01" & date <= "2021-08-01") %>% 
   select(date, low_time, hottest_hour) %>% 
   mutate(site = "Sahsima", lag = abs((low_time-hottest_hour)*60)) %>% 
-  filter(lag < 380) # filter out where lags are super long (based on other data from Saddlebag & Bluestone)
+  filter(lag < 380)
+# filter out where lags are super long (based on other data from Saddlebag & Bluestone)
+# since these data are anomalous
 
 
 ## 2006 Saddlebag Island data courtesy of CDG Harley
@@ -155,7 +163,7 @@ low_tide_hot_hour <- ggplot(aes(x = low_time, y = hottest_hour, col = site), dat
   labs(y = "Hour of maximum on-shore temperature", x = "Hour of lowest low tide")
 low_tide_hot_hour
 
-#ggsave(filename = "./outputs/S1Fig3.png", dpi = 1200, low_tide_hot_hour, scale = 1)
+#ggsave(filename = "./outputs/S1Fig4.png", dpi = 1200, low_tide_hot_hour, scale = 1)
 
 ################################################################################
 
@@ -211,5 +219,5 @@ calvert.panel <- ggplot(data = hourly.temp.calvert, aes(x = date_time)) +
   theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12))
 
 S1Fig1 <- calvert.panel / yyj.panel + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(face = "bold"))
-
+ggsave(yyj.panel, filename = "./outputs/S1Fig1_simple.png", dpi = 1200, width = 4, height = 1.5, units = "in",scale =1.5)
 #ggsave(S1Fig1, filename = "./outputs/S1Fig1.png", dpi = 1200, width = 7, height = 5, units = "in" )

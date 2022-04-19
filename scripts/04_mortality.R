@@ -3,10 +3,14 @@
 ## January 2021
 
 pkgs <- c("tidyverse", "lubridate", "car", "plotrix", "patchwork", "glmmTMB",
-          "DHARMa", "lme4", "wesanderson", "ggeffects")
+          "DHARMa", "lme4", "wesanderson", "ggeffects","visreg")
 lapply(pkgs, library, character.only = T)
 rm(pkgs)
 
+plot_theme <- theme_classic() + theme(axis.title = element_text(size = 14),
+                                      axis.text = element_text(size = 12),
+                                      legend.title = element_text(size = 14),
+                                      legend.text = element_text(size = 12))
 # Model 1: site-level variables & algal cover
 
 # Need to calculate site-level variables for initial model
@@ -35,6 +39,8 @@ temp.df.rename <- temp.df.all %>%  rename("date" = 1, "year" = 2,"month" = 3,
                                           "day" = 4, "max_temp_C" = 5, "mean_temp_C" = 6) %>% 
   mutate(site_code = if_else(site_code == "BS", "WBS", site_code))
 
+write_csv(temp.df.rename, "./clean_data/SBHW_TempAllSites.csv")
+
 # isolate only the heat wave period (June 25-29 2021)
 
 temp.hw <- temp.df.rename %>% filter(date <= "2021-06-29" & date >= "2021-06-25") %>% 
@@ -60,7 +66,8 @@ mortality <- read_csv("./raw_data/mortality/SBHW_MORT_surveys.csv") %>%
   select(-cover_live, -cover_dead, -algal_cover_per25sq)
 
 mort.model.df <- mortality %>% full_join(explanatory.variables) %>% 
-  mutate(prop_dead = number_dead/(number_dead+number_live)) %>% filter(is.nan(prop_dead) == F)
+  mutate(prop_dead = number_dead/(number_dead+number_live),
+         number_barnacles = number_dead+number_live) %>% filter(is.nan(prop_dead) == F)
 
 # examining the mortality data distribution
 hist(mort.model.df$prop_dead, breaks = 50, xlab = "Proportion dead", 
@@ -75,7 +82,7 @@ mort.mod.0 <- glmmTMB(prop_dead ~ mdmax + mean_low_tide_time +
 plot(density(residuals(mort.mod.0, type = "response"))) 
 # has a long tail ... data are overdispersed ... need to look at other fixes.
 
-mort.mod.1 <- glmmTMB(prop_dead ~ mdmax + mean_low_tide_time + 
+mort.mod.1 <- glmmTMB(prop_dead*100 ~ mdmax + mean_low_tide_time + 
                         algal_prop_cover + degrees_from_azimuth +
                         (1 | site_code/transect), data = mort.model.df, family = tweedie())
 
@@ -96,32 +103,47 @@ Anova(mort.mod.1)
 
 ## Create a plot of mortality
 
-mort.summary <- mort.model.df %>% mutate(site_code = factor(site_code)) %>% 
-  group_by(site_code, degrees_from_azimuth, mean_low_tide_time) %>% 
-  summarize(average_mort = mean(prop_dead, na.rm = T), 
-            average_maxtemp = mean(mdmax)) %>% 
-  mutate(site_code = factor(site_code))
+pred.mdmax <- ggpredict(mort.mod.1, terms=c("mdmax [27.8:36.4 by = 0.2]"))
 
-pal <- wes_palette("Zissou1", 20, type = "continuous")
-
-mort.plot <- ggplot(data = mort.model.df, aes(col = degrees_from_azimuth, 
-                                              y = prop_dead*100, 
+mort.plot.mdmax <- ggplot(data = mort.model.df, aes(y = prop_dead*100, 
                                               x = mdmax)) + 
-  geom_jitter(size = 2, width = 0.2, alpha = 0.8) + 
-  scale_color_gradientn(colors = pal, trans="reverse") + 
-  theme_classic() + 
-  labs(y = "Mortality (%)", col = "Aspect (º)", x = "Mean maximum daily air temperature (ºC)") + 
-  theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), 
-        legend.text = element_text(size = 12), legend.title = element_text(size = 14))
+  geom_jitter(size = 2, width = 0.1, alpha = 0.7) + 
+  plot_theme +
+  labs(y = "Mortality (%)", x = "Mean maximum daily air temperature (ºC)") + 
+  geom_line(data = pred.mdmax,aes(x=x,y=predicted), col = "red") +
+  geom_ribbon(data=pred.mdmax,aes(x=x, y=predicted,
+                                  ymax=conf.high, 
+                                  ymin=conf.low),
+              col = NA, alpha = 0.3, fill = "black")
 
-#ggsave(filename = "./outputs/Fig3.png", dpi = 1200, mort.plot, height = 2.5, width = 3.5, units = "in", scale = 1.5)
+
+pred.aspect <- ggpredict(mort.mod.1, terms=c("degrees_from_azimuth [0:220 by = 1]"))
+
+
+mort.plot.aspect <- ggplot(data = mort.model.df, aes(y = prop_dead*100, 
+                                              x = degrees_from_azimuth)) + 
+  geom_jitter(size = 2, width = 0.5, alpha = 0.7) + 
+  plot_theme +
+  labs(y = "Mortality (%)", x = "Degrees from azimuth (º)") + 
+  geom_line(data = pred.aspect,aes(x=x,y=predicted), col = "red") +
+  geom_ribbon(data=pred.aspect,aes(x=x, y=predicted,
+                                  ymax=conf.high, 
+                                  ymin=conf.low),
+              col = NA, alpha = 0.3, fill = "black")
+
+
+Fig3 <- (mort.plot.mdmax / mort.plot.aspect) + 
+  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 14, face ="bold"))
+
+ggsave(Fig3, filename = "./outputs/Fig3.png",
+       dpi = 1200, height = 4, width = 3.5, units = "in", scale = 1.5)
 
 ################################################################################
 
 # Model 2: angle of solar incidence specifically
 
 angle.data <- read_csv("./raw_data/mortality/SBHW_MORT_angles.csv")
-View(angle.data)
+
 site.info <- read_csv("./clean_data/SBHW_SiteInformation.csv") %>% 
   select(site_code,angles,solar_elevation, solar_azimuth) %>% na.omit() %>% select(-angles)
 
@@ -140,11 +162,13 @@ angle.correct <- angle.calculate %>%
 # now for the calculations
 solar.angles <- angle.correct %>% mutate(gamma = abs(orient_rad - solar_az_rad)) %>% 
   mutate(theta = acos(sin(beta)*cos(sigma) + cos(gamma)*cos(beta)*sin(sigma))) %>% 
-  mutate(angle = (theta/(2*pi)*360)) %>% 
-  select(prop_mort, angle, site_code) %>% 
-  mutate(site_code = str_replace_all(site_code, "WA","WBS"))
+  mutate(angle = (theta/(2*pi)*360), number_barnacles = number_live+number_dead) %>% 
+  select(prop_mort, angle, site_code, number_barnacles) %>% 
+  mutate(site_code = str_replace_all(site_code, "WA","WBS")) %>% 
+  na.omit
 
 angle.model.0 <- glmer(prop_mort ~ angle + (1+angle|site_code), 
+                       weights = number_barnacles,
                        family = binomial(link = "logit"), data = solar.angles)
 
 plot(density(resid(angle.model.0, type='deviance')))
@@ -153,12 +177,11 @@ qqnorm(residuals(angle.model.0, type = "deviance"))
 # looks reasonable 
 
 angle.model.1 <- update(angle.model.0, ~. -(1+angle|site_code) + (1|site_code))
-AIC(angle.model.0, angle.model.1) # allowing slope variation for each site is worse
+AIC(angle.model.0, angle.model.1) # allowing slope variation for each site is better
 
-# use angle.model.1 going forward
-
-summary(angle.model.1)
-Anova(angle.model.1)
+# use angle.model.0 going forward
+summary(angle.model.0)
+Anova(angle.model.0)
 
 site.levels <- as.data.frame(c("WBN","SP","SA","FC","TE","TS")) %>% rename(site_code = 1) 
 col.conversion <- site.levels %>% left_join(site_info) %>% select(full.pal)
@@ -169,7 +192,7 @@ set.seed(26)
 model.pred <- ggpredict(angle.model.1, terms = c("angle", "site_code"), type = "random") %>%
   rename(site_code = group)
 
-model.glm <- glm(prop_mort ~ angle, family = "binomial", data = solar.angles)
+model.glm <- glm(prop_mort ~ angle, weights = number_barnacles, family = "binomial", data = solar.angles)
 
 model.pred2 <- ggpredict(model.glm, terms = c("angle")) %>% select(-group)
 
@@ -177,13 +200,19 @@ solar.angles$site_code <- factor(solar.angles$site_code, levels = site.levels)
 
 angles.plot <- ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + 
   geom_point(size = 2) + 
-  labs(y = "Proportion mortality", x = "Angle of solar incidence (º)", col = "Site") + 
   theme_classic() + scale_color_manual(values = col.levels) + 
   scale_fill_manual(values = col.levels) + 
   theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), 
         legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + 
   geom_line(data = model.pred, aes(x = x, y = predicted)) + 
-  geom_smooth(method = "glm", method.args = list(family = "binomial"), aes(x = angle, y = prop_mort), col = "black")
-
+  geom_line(data = model.pred2, aes(x=x, y =predicted), col = "black",lwd = 1) +
+  geom_ribbon(data = model.pred2, aes(x=x, y=predicted,
+                                      ymax=predicted+std.error, 
+                                      ymin = predicted-std.error), 
+              col = NA,alpha = 0.3) +
+  coord_cartesian(y=c(0,1)) +
+  labs(y = "Proportion mortality", x = "Angle of solar incidence (º)", col = "Site")
+angles.plot
 #ggsave(angles.plot, filename = "./outputs/Fig4.png", dpi = 1200, height = 2.5, width = 3.5, units = "in", scale = 1.5)
 
+#ggsave(angles.plot + theme(legend.position = "none"), filename="./outputs/Fig4_ga.png",dpi=1000, height = 2.5, width = 3.5, units = "in",scale=1.5)

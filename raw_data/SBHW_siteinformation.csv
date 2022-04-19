@@ -1,4 +1,4 @@
-﻿site_name,alternative_name,site_code,latitude_degrees,longitude_degrees,mortality,angles,infauna,mortality_survey,angles_survey,substratum,orientation_degrees,aspect,solar_elevation,solar_azimuth
+﻿site_name,alternative_name,site_code,latitude_degrees,longitude_degrees,mortality,angles,community,mortality_survey,angles_survey,substratum,orientation_degrees,aspect,solar_elevation,solar_azimuth
 ṮEḴTEḴSEN,"East Point, Saturna, Island",TK,48.78487,-123.04444,1,,1,2021-08-06,,bedrock,160,SE,56.19,231.05
 ȾESNO¸EṈ¸,"Ruckle Park, Salt Spring Island",TE,48.7716,-123.36654,1,1,1,2021-08-05,2021-08-05,bedrock,113,E,56.62,229.93
 ŚNEU¸EU¸EĆ,Arbutus Cove/Hollydene Point,SN,48.4754,-123.2992,1,,1,2021-08-08,,bedrock,35,NE,59.07,223.38
@@ -10,7 +10,7 @@
 ke:?ioadl,Fishboat Bay/Point No Point,KE,48.39263,-123.97428,1,,1,2021-08-10,,boulders_bedrock,152,SE,64.34,193.73
 Bo:ʔapiʔis,Port Renfrew,BO,48.55447,-124.42127,1,,1,2021-08-10,,pilings_bedrock,357,N,64.68,179.14
 "Thousand-and-One Steps, White Rock",,TS,49.03122,-122.87536,,1,,,2021-07-11,boulders,248,W,55.95,230.99
-Sahsima,Chinese Cemetery,SA,48.40578,-123.32331,,1,1,,2021-08-21,bedrock,140,SW,60.75,217.34
+Sahsima,Chinese Cemetery,SA,48.40578,-123.32331,,1,,,2021-08-21,bedrock,140,SW,60.75,217.34
 ĆELḰINES,Moses Point,CE,48.69115,-123.48415,1,,,2021-08-08,,bedrock,20,NE,56.67,230.03
 "West Beach, Calvert Island",,WBS,51.65247,-128.14125,1,,1,2021-08-25,,bedrock,312,NW,61.46,173.27
 "Prasiola Point, Bamfield",,PP,48.81722,-125.16947,,,1,,,bedrock,215,NW,64.12,169.39
