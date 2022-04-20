@@ -2,7 +2,7 @@
 ## Amelia V. Hesketh, January 2022
 
 pkgs <- c("ggspatial", "tidyverse", "RColorBrewer", "ggrepel", "ggmap")
-lapply(pkgs, library, character = T)
+lapply(pkgs, library, character = T) 
 rm(pkgs)
 
 # input Google key to access map data
@@ -10,16 +10,16 @@ register_google(key = "AIzaSyDXb9xA_MSl7GzYF5Vcl9sedNZrawnNX1Q")
 
 # load in site information data to put points on the eventual maps
 site_info <- read_csv("./raw_data/SBHW_siteinformation.csv") %>% 
-  select(site_code, latitude_degrees, longitude_degrees, mortality, infauna, angles,
+  select(site_code, latitude_degrees, longitude_degrees, mortality, community, angles,
          orientation_degrees, solar_elevation, solar_azimuth) %>% 
   mutate_all(~replace_na(.,0)) %>% 
-  mutate(shape = case_when(mortality == 1 & infauna == 0 & angles == 0 ~ "M",
-                           mortality == 1 & infauna == 1 & angles == 0 ~ "MI",
-                           mortality == 0 & infauna == 1 & angles == 0 ~ "I",
-                           mortality == 0 & infauna == 0 & angles == 1 ~ "A",
-                           mortality == 1 & infauna == 0 & angles == 1 ~ "MA",
-                           mortality == 0 & infauna == 1 & angles == 1 ~ "IA",
-                           mortality == 1 & infauna == 1 & angles == 1 ~ "MIA")) %>% 
+  mutate(shape = as.factor(case_when(mortality == 1 & community == 0 & angles == 0 ~ "M",
+                           mortality == 1 & community == 1 & angles == 0 ~ "MC",
+                           mortality == 0 & community == 1 & angles == 0 ~ "C",
+                           mortality == 0 & community == 0 & angles == 1 ~ "A",
+                           mortality == 1 & community == 0 & angles == 1 ~ "MA",
+                           mortality == 0 & community == 1 & angles == 1 ~ "CA",
+                           mortality == 1 & community == 1 & angles == 1 ~ "MCA"))) %>% 
   rename(lat = latitude_degrees, long = longitude_degrees)
   
 site.levels <- site_info$site_code
@@ -55,13 +55,12 @@ base <- get_map(location=c(lon = -124.5, lat = 48.6) ,zoom=9, maptype = "terrain
 study_sites_west <- ggmap(base) +
   theme(panel.border = element_rect(fill = NA, colour= "black", size = 1)) +
   geom_point(aes(y = lat, x = long, fill = site_code, 
-                 color = site_code, pch = shape), data = site_info, size = 6, stroke = 1.5) +
-  scale_fill_manual(values = site_info$full.pal) +
-  scale_color_manual(values = site_info$full.pal) +
-  scale_shape_manual(values = c(2, 0, 14, 16, 17, 15, 8)) +
+                 color = site_code, pch = shape), data = site_info, size = 4, stroke = 1.5) +
+  scale_fill_manual(values = site_info$full.pal,  guide="none") +
+  scale_color_manual(values = site_info$full.pal, guide="none") +
+  scale_shape_manual(values = c(2, 0, 16, 17, 15, 8), guide = "none") +
   geom_point(aes(y = lat, x = long, pch = shape), data = site_info, size = 6, 
              color = "black", alpha = 0.45, stroke = 0.8) +
-  theme(legend.position = "none") +
   labs(x = "Longitude (degrees)", y = "Latitude (degrees)") +
   geom_text(aes(y = 48.37, x = -124.3, label = "Strait of Juan de Fuca", angle = 340), size = 8, fontface = "italic") +
   geom_text(aes(y = 48.8, x = -124.2, label = "Vancouver Island"), angle = 345, size = 8, fontface = "italic") +
@@ -83,7 +82,7 @@ study_sites_north <- ggmap(base) +
   theme(panel.border = element_rect(fill = NA, colour= "black", size = 1)) +
   geom_point(aes(y = lat, x = long, fill = site_code,
                  color = site_code, pch = shape), data = site_info, size = 6, stroke = 1.5) +
-  scale_shape_manual(values = c(2, 0, 14, 16, 17, 15, 8)) +
+  scale_shape_manual(values = c(2, 0, 16, 17, 15, 8)) +
   geom_point(aes(y = lat, x = long, pch = shape), data = site_info, size = 6, 
              color = "black", alpha = 0.45, stroke = 0.8) +
   scale_fill_manual(values = site_info$full.pal) +
@@ -114,7 +113,7 @@ study_sites_south <- ggmap(base) +
                  color = site_code, pch = shape), data = site_info, size = 6, stroke = 1.5) +
   scale_fill_manual(values = site_info$full.pal) +
   scale_color_manual(values = site_info$full.pal) +
-  scale_shape_manual(values = c(2, 0, 14, 16, 17, 15, 8)) +
+  scale_shape_manual(values = c(2, 0, 16, 17, 15, 8)) +
   geom_point(aes(y = lat, x = long, pch = shape), data = site_info, size = 6, 
                             color = "black", alpha = 0.45, stroke = 0.8) +
   theme(legend.position = "none") +

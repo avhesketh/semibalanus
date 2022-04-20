@@ -216,7 +216,8 @@ Fig2D <- ggdraw() + draw_image(fauna.photo) + theme(plot.margin = margin(0,0,0,0
 Fig2 <- (Fig2A | Fig2B) / (Fig2C | Fig2D) +
   plot_annotation(tag_levels = "A") & theme(plot.tag =element_text(size = 26, face = "bold")) 
 
-ggsave(Fig2, filename = "./outputs/Fig2.png", dpi = 1200, height = 5, width = 7, units = "in", scale = 2.5)
+ggsave(Fig2, filename = "./outputs/Fig2.png",
+       dpi = 600, height = 11, width = 18, units = "cm", scale = 2)
 
 ################################################################################
 

@@ -136,7 +136,7 @@ Fig3 <- (mort.plot.mdmax / mort.plot.aspect) +
   plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 14, face ="bold"))
 
 ggsave(Fig3, filename = "./outputs/Fig3.png",
-       dpi = 1200, height = 4, width = 3.5, units = "in", scale = 1.5)
+       dpi = 1200, height = 9, width = 8, units = "cm", scale = 2)
 
 ################################################################################
 
@@ -213,6 +213,6 @@ angles.plot <- ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = s
   coord_cartesian(y=c(0,1)) +
   labs(y = "Proportion mortality", x = "Angle of solar incidence (º)", col = "Site")
 angles.plot
-#ggsave(angles.plot, filename = "./outputs/Fig4.png", dpi = 1200, height = 2.5, width = 3.5, units = "in", scale = 1.5)
+#ggsave(angles.plot, filename = "./outputs/Fig4.png", dpi = 1200, height = 2.5, width = 3.5, units = "in", scale = 2)
 
 #ggsave(angles.plot + theme(legend.position = "none"), filename="./outputs/Fig4_ga.png",dpi=1000, height = 2.5, width = 3.5, units = "in",scale=1.5)
