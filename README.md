@@ -1,4 +1,4 @@
-# Mortality patterns of Semibalanus cariosus and changes in its associated community following the 2021 Western North American Heat Dome
+# Mortality patterns of <i>Semibalanus cariosus</i> and changes in its associated community following the 2021 Western North American Heat Dome
 
 Check out the related preprint here:
 https://ecoevorxiv.org/sn76j/
