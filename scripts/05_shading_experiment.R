@@ -47,12 +47,12 @@ temp.summary <- temp.lowtide %>% separate(date_time, into = c("date","time"),
   summarize(mean.max.temp = mean(max_temp), se.max.temp = std.error(max_temp)) %>% 
   mutate(treatment = factor(treatment, levels = c("UI","UR","SI","SR")))
 
-fig5a <- ggplot(data = temp.summary %>% filter(date >= "2021-05-01" & date < "2021-08-15") ,
+fig4a <- ggplot(data = temp.summary %>% filter(date >= "2021-05-01" & date < "2021-08-15") ,
                 aes(x = date, y = mean.max.temp, col = treatment, fill = treatment)) + 
   geom_line() + plot_theme + 
   scale_color_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3")) + 
   scale_fill_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3")) + 
-  labs(x = "Date", y = "Daily maximum temperature (ºC)", 
+  labs(x = "Date", y = "Max. daily temperature (ºC)", 
        color = "Treatment", fill = "Treatment") + 
   annotate("rect", xmin = ymd("2021-06-25"), xmax = ymd("2021-06-29"), 
            ymin = 10, ymax = 45, fill = "black",  col = NA, alpha = 0.3) 
@@ -66,7 +66,7 @@ temp.hw <- temp.rounded %>% separate(date_time, c("date", "time"), " ", remove  
   summarize(mean.temp = mean(temperature_C), se.temp = std.error(temperature_C)) %>% 
   mutate(treatment = factor(treatment, levels = c("UI","UR","SI","SR")))
 
-fig5b <- ggplot(data = temp.hw, aes(x = date_time, y = mean.temp, col = treatment, fill = treatment)) + 
+fig4b <- ggplot(data = temp.hw, aes(x = date_time, y = mean.temp, col = treatment, fill = treatment)) + 
   geom_line() + scale_color_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3")) + 
   scale_fill_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3")) + 
   labs(x = "Date", y = "Temperature (ºC)", fill = "Treatment", color = "Treatment") + 
@@ -98,7 +98,7 @@ trt.diff.max.nhd <- temp.lowtide %>% separate(date_time, c("date", "time"), " ",
 
 # And finally, a plot showing the differences in mean daily maximum temp between treatments
 
-S1F6 <- ggplot(data = temp.summary,
+S1F5 <- ggplot(data = temp.summary,
                aes(x = treatment, y = mean.max.temp, col = treatment, fill = treatment)) + 
   geom_boxplot(alpha = 0.4, outlier.color = NA) + 
   scale_color_manual(values = c("skyblue4","skyblue3", "tomato4", "tomato2")) + 
@@ -108,7 +108,7 @@ S1F6 <- ggplot(data = temp.summary,
   plot_theme +
   geom_jitter(width = 0.2, alpha = 0.2)
 
-#ggsave(S1F6, filename = "./outputs/S1Fig6.png", dpi = 1200, width = 7, height = 5, units = "in")
+ggsave(S1F5, filename = "./outputs/S1Fig5.png", dpi = 1200, width = 7, height = 5, units = "in", scale = 1.2)
 
 
 # Create a model to test treatment differences in max daily temp between treatment
@@ -157,7 +157,7 @@ summary(shade.mort.model)
 Anova(shade.mort.model) # Type 2 ANOVA (Wald Chi-square)
 
 # Boxplot of mortality
-fig5c <- ggplot(mort.beds, aes(x = treatment, y = prop_mort, col = treatment, fill = treatment)) + 
+fig4c <- ggplot(mort.beds, aes(x = treatment, y = prop_mort, col = treatment, fill = treatment)) + 
   geom_boxplot(alpha = 0.4, outlier.size = NA) + 
   scale_color_manual( values = c("tomato4", "skyblue4")) +
   scale_fill_manual(values = c("tomato4", "skyblue4")) + 
@@ -166,7 +166,7 @@ fig5c <- ggplot(mort.beds, aes(x = treatment, y = prop_mort, col = treatment, fi
   plot_theme +
   theme(legend.position = "none") + 
   geom_jitter(width = 0.2, alpha = 0.3)
-
+fig4c
 
 ################################################################################
 
@@ -231,10 +231,10 @@ summary(mod.recruit)
 Anova(mod.recruit)
 
 # Boxplot of barnacle recruitment
-fig5d <- ggplot(recruitment.peak, aes(x = treatment_code, y = total_abund, 
+fig4d <- ggplot(recruitment.peak, aes(x = treatment_code, y = total_abund, 
                                       fill =  treatment_code, col =  treatment_code)) + 
   geom_boxplot(alpha = 0.4, outlier.shape = NA) + geom_jitter(width = 0.2, alpha = 0.3) + 
-  labs(x = "Treatment", y = "Total barnacle recruit abundance", fill = "Treatment") + 
+  labs(x = "Treatment", y = "Barnacle recruit abundance", fill = "Treatment") + 
   plot_theme +
   scale_fill_manual(values = c("tomato2", "skyblue3")) + 
   scale_color_manual(values = c("tomato2", "skyblue3")) + 
@@ -268,7 +268,7 @@ testDispersion(simulationOutput) # slight underdispersion.
 summary(richness.model)
 Anova(richness.model, type = 3) # still detect an effect, so this is likely real
 
-fig5e <- ggplot(richness.final.timept, aes(x = treatment_code, y = richness,
+fig4e <- ggplot(richness.final.timept, aes(x = treatment_code, y = richness,
                                     fill = treatment_code, col = treatment_code)) + 
   geom_boxplot(alpha = 0.4, outlier.color = NA) + geom_jitter(alpha = 0.3, width = 0.2) + 
   scale_color_manual(values = c("tomato4", "tomato2", "skyblue4","skyblue3")) + 
@@ -304,14 +304,14 @@ plot(simulateResiduals(diversity.inverts.lmer))
 summary(diversity.inverts.lmer)
 Anova(diversity.inverts.lmer, type = 3)
 
-fig5f <- ggplot(shannon.inverts, aes(x = treatment_code, y = shannon, 
+fig4f <- ggplot(shannon.inverts, aes(x = treatment_code, y = shannon, 
                                      fill = treatment_code, col = treatment_code)) + 
   geom_boxplot(alpha = 0.4, outlier.color = NA) + geom_jitter(alpha = 0.3, width = 0.2) + 
   scale_color_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3")) +
   scale_fill_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3"))+ 
   plot_theme +
   theme(legend.position = "none") + 
-  labs(x = "Treatment", y = "Shannon diversity (invertebrates)")
+  labs(x = "Treatment", y = "Invert. Shannon diversity")
 
 # 4C: Algal Shannon diversity
 
@@ -345,13 +345,13 @@ summary(diversity.algae.lmer)
 Anova(diversity.algae.lmer, type = 3) # interaction not significant
 Anova(diversity.algae.lmer, type = 2)
 
-S1Fig7A <- ggplot(shannon.algae, aes(x = treatment_code, y = shannon, 
+S1Fig6A <- ggplot(shannon.algae, aes(x = treatment_code, y = shannon, 
                                      fill = treatment_code, col = treatment_code)) + 
   geom_boxplot(alpha = 0.4, outlier.color = NA) + geom_jitter(alpha = 0.3, width = 0.2) + 
   scale_color_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3")) +
   scale_fill_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3")) +
   plot_theme + 
-  labs(x = "Treatment", y = "Shannon diversity (algae)",color = "Treatment", fill = "Treatment")
+  labs(x = "Treatment", y = "Algal Shannon diversity",color = "Treatment", fill = "Treatment")
 
 # 4D: Algal cover
 
@@ -377,7 +377,7 @@ Anova(cover.algae.glmm, type = 3) # interaction not significant
 Anova(cover.algae.glmm, type = 2)
 
 # Create boxplot of algal cover
-S1Fig7B <- ggplot(algal_cover, aes(x = treatment_code, y = cover*100, 
+S1Fig6B <- ggplot(algal_cover, aes(x = treatment_code, y = cover*100, 
                                    fill = treatment_code, col = treatment_code)) + 
   geom_boxplot(alpha = 0.4, outlier.color = NA) + geom_jitter(alpha = 0.3, width = 0.2) +
   scale_color_manual(values = c("tomato4", "tomato2","skyblue4","skyblue3")) +
@@ -389,18 +389,18 @@ layout <- "
 AAAABBBB
 CCDDEEFF"
 
-fig5 <- fig5a + fig5b + fig5c + fig5d + fig5e + fig5f + 
+fig4 <- fig4a + fig4b + fig4c + fig4d + fig4e + fig4f + 
   plot_layout(guides = "collect", design = layout, nrow = 2) + 
-  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(face = "bold"))
+  plot_annotation(tag_levels = "a") & theme(plot.tag = element_text(face = "bold"))
 
-ggsave(fig5, filename = "./outputs/Fig5.png", dpi = 1200, 
-       width = 7, height = 5, units = "in", scale = 1.5) 
+ggsave(fig4, filename = "./outputs/Fig4.png", dpi = 1200, 
+       width = 7, height = 5, units = "in", scale = 1.4) 
 
-S1Fig7 <- S1Fig7A + S1Fig7B + plot_layout(guides = "collect") + 
-  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(face = "bold"))
+S1Fig6 <- S1Fig6A + S1Fig6B + plot_layout(guides = "collect") + 
+  plot_annotation(tag_levels = "a") & theme(plot.tag = element_text(face = "bold"))
 
-ggsave(S1Fig7, filename = "./outputs/S1Fig7.png", dpi =1200, 
-       width = 7, height = 4, units = "in")
+ggsave(S1Fig6, filename = "./outputs/S1Fig6.png", dpi =1200, 
+       width = 7, height = 4, units = "in", scale = 1.4)
 
 
 ################################################################################
@@ -425,13 +425,17 @@ associated_factors <- associated_sahsima %>% select(treatment, block) %>%
 associated_matrix <- associated_sahsima %>% select(-treatment, -block) %>% as.matrix()
 
 # Run MDS with autotransform (to account for things with different abundances)
-associated_bray <- metaMDS(associated_matrix, k=2, try = 999, autotransform = T)
-associated_bray$stress # < 0.2, so stick with 2 dimensions
 
+associated_bray <- capscale(associated_matrix ~ treatment, data = associated_factors, distance = "bray",
+                            metaMDSdist = T)
+plot(associated_bray)
+scores(associated_bray)
+View(associated_bray)
 # PERMANOVA
-h <- how(nperm = 9999) 
-setBlocks(h) <- with(associated_factors, block) # set permutation scheme with block design
-adonis(associated_matrix ~ treatment, associated_factors, permutations = h)
+
+h <- how(blocks = associated_factors$block, nperm = 999) #constrain permutation
+adonis2(associated_matrix ~ treatment, associated_factors, permutations = h,
+        by = "terms")
 
 # PERMDISP
 dist <- vegdist(infauna_matrix, "bray")
@@ -439,14 +443,15 @@ associated.beta <- betadisper(dist, associated_factors$treatment, bias.adjust = 
 anova(associated.beta)
 
 # Create NMDS plot with all species present
-data.scores <- as.data.frame(scores(associated_bray))
+data.scores <- as.data.frame(scores(associated_bray)$sites)
 data.scores$treatment <- associated_factors$treatment
 
-data.scores <- data.scores %>% group_by(treatment) %>% 
-  mutate(mean.x = mean(NMDS1), mean.y = mean(NMDS2)) %>% ungroup() %>%
-  mutate(treatment = case_when(treatment == "1" ~ "Unshaded",treatment == "2" ~ "Shaded"))
 
-species.scores <- as.data.frame(scores(infauna_bray, "species"))
+data.scores <- data.scores %>% group_by(treatment) %>% 
+  mutate(mean.x = mean(CAP1), mean.y = mean(MDS1)) %>% ungroup() %>%
+  mutate(treatment = case_when(treatment == "1" ~ "Unshaded",treatment == "2" ~ "Shaded"))
+species.scores
+species.scores <- as.data.frame(scores(associated_bray)$species)
 species.scores$species <- rownames(species.scores) 
 
 ## adding ellipses to plot
@@ -461,40 +466,44 @@ veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
 df_ell <- data.frame()
 for(g in levels(as.factor(data.scores$treatment))){
   df_ell <- rbind(df_ell, cbind(as.data.frame(with(data.scores[data.scores$treatment==g,],
-                                                   veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2)))))
+                                                   veganCovEllipse(cov.wt(cbind(CAP1,MDS1),wt=rep(1/length(CAP1),length(CAP1)))$cov,center=c(mean(CAP1),mean(MDS1)))))
                                 ,group=g))
 }
 
 df_ell$treatment <- df_ell$group
 
 ## create ggplot ordination
-Fig6A <- ggplot() + 
-  geom_path(data=df_ell,aes(x = NMDS1,y =NMDS2,colour=treatment)) +
-  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=treatment),size=3, alpha = 0.8) + # add the point markers
-  geom_text_repel(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size = 4, alpha=0.7,
-                  max.overlaps = 500, box.padding=0.05, min.segment.length = 5) +
+Fig5A <- ggplot() + 
+  geom_path(data=df_ell,aes(x = CAP1,y =MDS1,colour=treatment)) +
+  geom_point(data=data.scores,aes(x=CAP1,y=MDS1,colour=treatment),size=3, alpha = 0.8) + # add the point markers
+  #geom_text_repel(data=species.scores,aes(x=CAP1,y=MDS1,label=species),size = 3, alpha=0.7,
+                 # max.overlaps = 500, box.padding=0.05, min.segment.length = 5) +
   coord_equal() +
   scale_color_manual(values = c("skyblue4","tomato4")) +
-  labs(color = "Treatment", x = "Axis 1", y = "Axis 2") +
+  labs(color = "Treatment", x = "CAP1", y = "MDS1") +
   plot_theme +
-  theme(legend.position = c(0.75, 0.72),
-        plot.margin=margin(0,150,0,0)) +
-  annotate("text", x = 0.75, y = 1, label = "Stress = 0.1739", size = 5)
-
+  theme(legend.position = c(0.4, 0.87),
+        plot.margin=margin(0,0,0,0),
+        axis.text = element_text(size = 14),
+        legend.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        legend.title = element_text(size = 16))
+Fig5A
 dead.photo <- image_convert(image_read("./raw_data/photos/dead.jpg"), "png")
 live.photo <- image_convert(image_read("./raw_data/photos/live.jpg"), "png")
 
-Fig6B <- ggdraw() + draw_image(live.photo) + theme(plot.margin = margin(0,0,0,0),
+Fig5B <- ggdraw() + draw_image(live.photo) + theme(plot.margin = margin(0,0,0,0),
                                                    panel.background=element_rect(colour="skyblue4",size=1))
                                                   
-Fig6C <- ggdraw() + draw_image(dead.photo) + theme(plot.margin = margin(0,0,0,0),
+Fig5C <- ggdraw() + draw_image(dead.photo) + theme(plot.margin = margin(0,0,0,0),
                                                    panel.background=element_rect(colour="tomato4",size=1))
 
-Fig6 <- Fig6A +
-  inset_element(Fig6B, left = 0.73, bottom = 0.55, right = 1, top = 1, align_to = 'full') +
-  inset_element(Fig6C, left = 0.73, bottom = 0.1, right = 1, top = 0.55, align_to = 'full')
-Fig6
-ggsave(Fig6, filename = "./outputs/Fig6.png", dpi = 1200, width = 3.5, height = 2.5, units = "in", scale = 2)
+Fig5 <- Fig5A +
+  inset_element(Fig6C, left = 0.13, bottom = 0.14, right = 0.31, top = 0.395, align_to = 'full') +
+  inset_element(Fig6B, left = 0.81, bottom = 0.70, right = 0.99, top = 0.96, align_to = 'full')
+Fig5
+ggsave(Fig5, filename = "./outputs/Fig5.png", dpi = 1200, width = 3.5, height = 2.5, units = "in", scale = 1.5)
+ggsave(Fig5A, filename = "./outputs/Fig5A.png", dpi = 1200, width = 3.5, height = 2.5, units = "in", scale = 1.5)
 
 # now with only non-rare species (>5 individuals)
 
@@ -504,13 +513,13 @@ abund.spec <- as.data.frame(colSums(associated_matrix)) %>%
   rename(total = 1) %>% filter(total >= 5) %>% rownames()
 associated_abund <- associated_matrix[,abund.spec] # removes 10 spp
 
-associated_bray_abund <- invisible(metaMDS(associated_abund, k=2, try = 999, autotransform = T))
-associated_bray_abund$stress # < 0.2, so stick with 2 dimensions
+associated_bray_abund <- capscale(associated_abund ~ treatment, data = associated_factors, distance = "bray",
+                                                    metaMDSdist = T)
 
 # PERMANOVA
 h <- how(nperm = 9999) 
 setBlocks(h) <- with(associated_factors, block) # set permutation scheme with block design
-adonis(associated_abund ~ treatment, associated_factors, permutations = h)
+adonis2(associated_abund ~ treatment, associated_factors, permutations = h)
 
 # PERMDISP
 dist <- vegdist(associated_abund, "bray")
@@ -519,14 +528,15 @@ anova(associated.beta)
 
 ## ggplot of NMDS axes
 
-data.scores <- as.data.frame(scores(infauna_bray_abund))
-data.scores$treatment <- infauna_factors$treatment
+# Create NMDS plot with all species present
+data.scores <- as.data.frame(scores(associated_bray_abund)$sites)
+data.scores$treatment <- associated_factors$treatment
 
 data.scores <- data.scores %>% group_by(treatment) %>% 
-  mutate(mean.x = mean(NMDS1), mean.y = mean(NMDS2)) %>% ungroup() %>% 
+  mutate(mean.x = mean(CAP1), mean.y = mean(MDS1)) %>% ungroup() %>%
   mutate(treatment = case_when(treatment == "1" ~ "Unshaded",treatment == "2" ~ "Shaded"))
 
-species.scores <- as.data.frame(scores(infauna_bray_abund, "species"))
+species.scores <- as.data.frame(scores(associated_bray_abund)$species)
 species.scores$species <- rownames(species.scores) 
 
 ## adding ellipses to plot
@@ -541,28 +551,25 @@ veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100)
 df_ell <- data.frame()
 for(g in levels(as.factor(data.scores$treatment))){
   df_ell <- rbind(df_ell, cbind(as.data.frame(with(data.scores[data.scores$treatment==g,],
-                                                   veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2)))))
+                                                   veganCovEllipse(cov.wt(cbind(CAP1,MDS1),wt=rep(1/length(CAP1),length(CAP1)))$cov,center=c(mean(CAP1),mean(MDS1)))))
                                 ,group=g))
 }
 
 df_ell$treatment <- df_ell$group
-
+?chol
 ## create ggplot ordination
 infauna.ordination.sa.abund <- ggplot() + 
-  geom_path(data=df_ell,aes(x = NMDS1,y =NMDS2,colour=treatment)) +
-  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,colour=treatment),size=3, alpha = 0.8) + # add the point markers
-  geom_text_repel(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),size = 4, alpha=0.7,
-                  max.overlaps = 500, box.padding=0.05, min.segment.length = 5) +
+  geom_path(data=df_ell,aes(x = CAP1,y =MDS1,colour=treatment)) +
+  geom_point(data=data.scores,aes(x=CAP1,y=MDS1,colour=treatment),size=3, alpha = 0.8) + # add the point markers
+  #geom_text_repel(data=species.scores,aes(x=CAP1,y=MDS1,label=species),size = 3, alpha=0.7,
+                 # max.overlaps = 500, box.padding=0.05, min.segment.length = 5) +
   coord_equal() +
   plot_theme +
   scale_color_manual(values = c("skyblue4","tomato4")) +
-  labs(color = "Treatment", x = "Axis 1", y = "Axis 2") +
-  
-  annotate("text", x = 0.75, y = -0.4, label = "Stress = 0.1770", size = 5)
+  labs(color = "Treatment", x = "CAP1", y = "MDS1") 
 infauna.ordination.sa.abund
 
-#ggsave(filename = "./outputs/S1Fig8.png", infauna.ordination.sa.abund, dpi = 1200,width = 3.5, height = 2.5, units = "in", scale = 2)
-
+ggsave(filename = "./outputs/S1Fig7.png", infauna.ordination.sa.abund, dpi = 1200,width = 3.5, height = 2.5, units = "in", scale = 2)
 
 
 ### Question 6: Did associated diversity change depending on barnacle mortality
@@ -607,6 +614,7 @@ Anova(mort.abund.mod)
 abund.pred <- predict(mort.abund.mod, mort.comm, type = "response", se.fit = T) 
 mort.comm <- cbind(mort.comm, abund.pred) %>% rename(abund.pred = fit, abund.se = se.fit) %>% 
   dplyr::select(-residual.scale)
+
 mort.abund <- ggplot(mort.comm %>% 
                        filter(treatment == "Unshaded"), 
                      aes(x = prop_mort*100, y = abund.ass)) + 
@@ -651,8 +659,8 @@ mort.rich <- ggplot(mort.comm, aes(x = prop_mort*100, y = rich.ass)) +
   geom_ribbon(aes(ymax = rich.pred + rich.se, ymin = rich.pred-rich.se), 
               col = NA, alpha = 0.2)
 
-S1Fig9 <- mort.abund/mort.rich/mort.H + plot_annotation(tag_levels = "A") &
+S1Fig8 <- mort.abund/mort.rich/mort.H + plot_annotation(tag_levels = "a") &
   theme(plot.tag = element_text(face = "bold"))
 
-ggsave("./outputs/S1Fig9.png", S1Fig9, dpi = 1200, width = 5, height = 7,
+ggsave("./outputs/S1Fig8.png", S1Fig9, dpi = 1200, width = 5, height = 7,
        units = "in")

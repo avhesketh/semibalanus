@@ -218,6 +218,6 @@ calvert.panel <- ggplot(data = hourly.temp.calvert, aes(x = date_time)) +
   theme_classic() + 
   theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12))
 
-S1Fig1 <- calvert.panel / yyj.panel + plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(face = "bold"))
-ggsave(yyj.panel, filename = "./outputs/S1Fig1_simple.png", dpi = 1200, width = 4, height = 1.5, units = "in",scale =1.5)
-#ggsave(S1Fig1, filename = "./outputs/S1Fig1.png", dpi = 1200, width = 7, height = 5, units = "in" )
+S1Fig1 <- calvert.panel / yyj.panel + plot_annotation(tag_levels = "a") & theme(plot.tag = element_text(face = "bold"))
+#ggsave(yyj.panel, filename = "./outputs/S1Fig1_simple.png", dpi = 1200, width = 4, height = 1.5, units = "in",scale =1.5)
+ggsave(S1Fig1, filename = "./outputs/S1Fig1.png", dpi = 1200, width = 7, height = 5, units = "in", scale = 1.4)

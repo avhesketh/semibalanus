@@ -7,6 +7,7 @@ pkgs <- c("tidyverse", "lubridate", "car", "plotrix", "patchwork", "glmmTMB",
 lapply(pkgs, library, character.only = T)
 rm(pkgs)
 
+
 plot_theme <- theme_classic() + theme(axis.title = element_text(size = 14),
                                       axis.text = element_text(size = 12),
                                       legend.title = element_text(size = 14),
@@ -43,21 +44,25 @@ write_csv(temp.df.rename, "./clean_data/SBHW_TempAllSites.csv")
 
 # isolate only the heat wave period (June 25-29 2021)
 
-temp.hw <- temp.df.rename %>% filter(date <= "2021-06-29" & date >= "2021-06-25") %>% 
+temp.hw <- read_csv("./clean_data/SBHW_TempAllSites.csv") %>% filter(date <= "2021-06-29" & date >= "2021-06-25") %>% 
   group_by(site_code) %>% summarize(mdmax = mean(max_temp_C, na.rm = T)) 
 
-# 2: load in aspect information for each site
+# 2: load site-level information
 survey.info <- read_csv("./clean_data/SBHW_SiteInformation.csv") %>% 
-  select(site_code, mortality, orientation_degrees, solar_azimuth)  %>% 
-  na.omit() %>% mutate(degrees_from_azimuth = abs(orientation_degrees-solar_azimuth))
+  select(site_code, mortality, solar_azimuth) 
 
-# 3: load in tide timing information for each site
+# 3: load tide timing information for each site
 tides_summary <- read_csv("./clean_data/SBHW_Tides.csv") %>% 
   group_by(site_code, date) %>% mutate(low_water = min(tide_height_m)) %>%
   ungroup() %>% filter(tide_height_m == low_water) %>% group_by(site_code) %>% 
   summarize(mean_low_tide_time = mean(hour))
 
-explanatory.variables <- survey.info %>% left_join(temp.hw) %>% 
+# 4: load transect-level orientation information
+transect_orientation <- read_csv("./raw_data/mortality/SBHW_MORT_transectorientation.csv") %>% 
+  left_join(survey.info) %>%
+  mutate(degrees_from_azimuth = abs(orientation_degrees-solar_azimuth))
+
+explanatory.variables <- transect_orientation %>% left_join(temp.hw) %>% 
   select(-mortality, -orientation_degrees,-solar_azimuth) %>% left_join(tides_summary) %>% na.omit
 
 ## Compute the response data
@@ -73,33 +78,48 @@ mort.model.df <- mortality %>% full_join(explanatory.variables) %>%
 hist(mort.model.df$prop_dead, breaks = 50, xlab = "Proportion dead", 
      main = "Histogram of mortality data")
 
+# classify variables correctly
+mort.model.df <- mort.model.df %>% 
+  mutate(site_code = factor(site_code),
+         transect = factor(transect))
+
+# scale variables
+mort.model.df.st <- mort.model.df %>% 
+  mutate(mdmax = scale(mdmax),
+         mean_low_tide_time = scale(mean_low_tide_time),
+         algal_prop_cover = scale(algal_prop_cover),
+         degrees_from_azimuth = scale(degrees_from_azimuth))
+
 # try out different error distributions
 
-mort.mod.0 <- glmmTMB(prop_dead ~ mdmax + mean_low_tide_time + 
-                        algal_prop_cover + degrees_from_azimuth + (1 | site_code), 
-                      data = mort.model.df, family = binomial(link = "logit"))
+mort.mod.0 <- glmmTMB(prop_dead ~ (mdmax + mean_low_tide_time + 
+                        algal_prop_cover + degrees_from_azimuth)^2 + (1 | site_code), 
+                      data = mort.model.df.st, family = binomial(link = "logit"))
 
 plot(density(residuals(mort.mod.0, type = "response"))) 
+
 # has a long tail ... data are overdispersed ... need to look at other fixes.
 
-mort.mod.1 <- glmmTMB(prop_dead*100 ~ mdmax + mean_low_tide_time + 
-                        algal_prop_cover + degrees_from_azimuth +
-                        (1 | site_code/transect), data = mort.model.df, family = tweedie())
-
+mort.mod.1 <- glmmTMB(prop_dead*100 ~ (mdmax + mean_low_tide_time + 
+                        degrees_from_azimuth + algal_prop_cover)^2 + 
+                        (1 | site_code/transect), data = mort.model.df.st, family = tweedie())
+summary(mort.mod.1)
 plot(simulateResiduals(mort.mod.1)) # this seems to work. 
 
 #try the beta model since this is more correct
 
 mort.mod.2 <- glmmTMB((prop_dead*nrow(mort.model.df)+0.5)/nrow(mort.model.df) ~ 
-                        mdmax + mean_low_tide_time + algal_prop_cover + degrees_from_azimuth + 
-                        (1 | site_code/transect), data = mort.model.df, family = beta_family())
+                        (mdmax + mean_low_tide_time + 
+                           degrees_from_azimuth 
+                         + algal_prop_cover)^2 +
+                        (1 | site_code/transect), data = mort.model.df.st, family = beta_family())
 
 plot(simulateResiduals(mort.mod.2)) 
 # the error distribution family seems wrong with beta. Stick with Tweedie!
 
 summary(mort.mod.1)
 plot(residuals(mort.mod.1))
-Anova(mort.mod.1)
+Anova(mort.mod.1, type = 2)
 
 ## Create a plot of mortality
 
@@ -133,7 +153,7 @@ mort.plot.aspect <- ggplot(data = mort.model.df, aes(y = prop_dead*100,
 
 
 Fig3 <- (mort.plot.mdmax / mort.plot.aspect) + 
-  plot_annotation(tag_levels = "A") & theme(plot.tag = element_text(size = 14, face ="bold"))
+  plot_annotation(tag_levels = "a") & theme(plot.tag = element_text(size = 14, face ="bold"))
 
 ggsave(Fig3, filename = "./outputs/Fig3.png",
        dpi = 1200, height = 9, width = 8, units = "cm", scale = 2)
@@ -180,8 +200,8 @@ angle.model.1 <- update(angle.model.0, ~. -(1+angle|site_code) + (1|site_code))
 AIC(angle.model.0, angle.model.1) # allowing slope variation for each site is better
 
 # use angle.model.0 going forward
-summary(angle.model.0)
-Anova(angle.model.0)
+summary(angle.model.1)
+Anova(angle.model.1)
 
 site.levels <- as.data.frame(c("WBN","SP","SA","FC","TE","TS")) %>% rename(site_code = 1) 
 col.conversion <- site.levels %>% left_join(site_info) %>% select(full.pal)
@@ -199,11 +219,12 @@ model.pred2 <- ggpredict(model.glm, terms = c("angle")) %>% select(-group)
 solar.angles$site_code <- factor(solar.angles$site_code, levels = site.levels)
 
 angles.plot <- ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = site_code)) + 
-  geom_point(size = 2) + 
+  geom_point(size = 2, alpha = 0.8) + 
   theme_classic() + scale_color_manual(values = col.levels) + 
   scale_fill_manual(values = col.levels) + 
   theme(axis.title = element_text(size = 14), axis.text = element_text(size = 12), 
-        legend.text = element_text(size = 12), legend.title = element_text(size = 14)) + 
+        legend.text = element_text(size = 12), legend.title = element_text(size = 14),
+        legend.position = c(0.9, 0.67)) + 
   geom_line(data = model.pred, aes(x = x, y = predicted)) + 
   geom_line(data = model.pred2, aes(x=x, y =predicted), col = "black",lwd = 1) +
   geom_ribbon(data = model.pred2, aes(x=x, y=predicted,
@@ -213,6 +234,7 @@ angles.plot <- ggplot(data = solar.angles, aes(x = angle, y = prop_mort, col = s
   coord_cartesian(y=c(0,1)) +
   labs(y = "Proportion mortality", x = "Angle of solar incidence (º)", col = "Site")
 angles.plot
-#ggsave(angles.plot, filename = "./outputs/Fig4.png", dpi = 1200, height = 2.5, width = 3.5, units = "in", scale = 2)
 
-#ggsave(angles.plot + theme(legend.position = "none"), filename="./outputs/Fig4_ga.png",dpi=1000, height = 2.5, width = 3.5, units = "in",scale=1.5)
+ggsave(angles.plot, filename = "./outputs/Fig3.png", 
+       dpi = 1200, height = 2.5, width = 3.5, units = "in", scale = 1.3)
+

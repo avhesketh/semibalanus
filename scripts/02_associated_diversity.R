@@ -209,15 +209,15 @@ Fig2C <- ggplot(aes(x = site_code, fill = coarse_grouping, y = mean.abund),
 
 # read in photo for panel 2D
 
-fauna.photo <- image_convert(image_read("./raw_data/fauna.jpg"), "png")
+fauna.photo <- image_convert(image_read("./raw_data/photos/fauna.jpg"), "png")
 
 Fig2D <- ggdraw() + draw_image(fauna.photo) + theme(plot.margin = margin(0,0,0,0))
 
 Fig2 <- (Fig2A | Fig2B) / (Fig2C | Fig2D) +
-  plot_annotation(tag_levels = "A") & theme(plot.tag =element_text(size = 26, face = "bold")) 
+  plot_annotation(tag_levels = "a") & theme(plot.tag =element_text(size = 26, face = "bold")) 
 
 ggsave(Fig2, filename = "./outputs/Fig2.png",
-       dpi = 600, height = 11, width = 18, units = "cm", scale = 2)
+       dpi = 600, height = 11, width = 18, units = "cm", scale = 2.75)
 
 ################################################################################
 
